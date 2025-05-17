@@ -2,16 +2,16 @@
 pub enum Token {
   ILLEGAL,
   EOF,
-	IDENT,
- 	INT,
+  IDENT,
+  INT,
   ASSIGN,
   PLUS,
-	COMMA,
-  SEMICOLON, 
+  COMMA,
+  SEMICOLON,
   LPAREN,
   RPAREN,
   LBRACE,
   RBRACE,
-  FUNCTION, 
+  FUNCTION,
   LET
 }

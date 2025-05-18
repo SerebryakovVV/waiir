@@ -18,9 +18,7 @@ impl Lexer {
       read_position: 0,			
       ch: None
     };
-    // println!("{:#?}", lexer);
     lexer.read_char();
-    // println!("{:#?}", lexer);
     lexer
   }
 
@@ -36,27 +34,109 @@ impl Lexer {
 
   pub fn next_token(&mut self) -> Token {
     let token;
+    self.skip_whitespace();
     if let Some(t) = self.ch {
       token = match t {
-        '=' => Token::ASSIGN,
         ';' => Token::SEMICOLON,
         '(' => Token::LPAREN,
         ')' => Token::RPAREN,
         ',' => Token::COMMA,
         '+' => Token::PLUS,
+        '-' => Token::MINUS,
+        '*' => Token::ASTERISK,
+        '/' => Token::SLASH,
+        '<' => Token::LT,
+        '>' => Token::GT,
         '{' => Token::LBRACE,
         '}' => Token::RBRACE,
-        _ => Token::ILLEGAL,
+        '=' => {
+          if let Some(c) = self.peek_char() {
+            if c == '=' {
+              self.read_char();
+              Token::EQ
+            } else {
+              Token::ASSIGN
+            }
+          } else {
+            Token::ASSIGN
+          }
+        },
+        '!' => {
+          if let Some(c) = self.peek_char() {
+            if c == '=' {
+              self.read_char();
+              Token::NOTEQ
+            } else {
+              Token::BANG
+            }
+          } else {
+            Token::BANG
+          }
+        },
+        _   => {
+          if t.is_ascii_alphabetic() {
+            let literal = self.read_identifier();
+            return match literal.as_str() {
+              "fn"     => Token::FUNCTION,
+              "let"    => Token::LET,
+              "true"   => Token::TRUE,
+              "false"  => Token::FALSE,
+              "if"     => Token::IF,
+              "else"   => Token::ELSE,
+              "return" => Token::RETURN,
+              _        => Token::IDENT(literal)
+            };
+          } else if t.is_ascii_digit() {
+            let num = self.read_number();
+            return Token::INT(num);
+          } else {
+            Token::ILLEGAL
+          }
+        }
       }
     } else {
-      // TODO: book interpretes this case as the end of file, need to check later
-      // he also have some newToken function, mb can be replaced with just enum with values
+      // TODO: check this part
       token = Token::EOF;
     }
     self.read_char();
-    println!("{:?}", token);
     token
   }
+
+ fn read_identifier(&mut self) -> String {
+    let position = self.position;
+    while let Some(c) = self.ch {
+      if c.is_ascii_alphabetic() || c == '_' {
+        self.read_char();
+      } else {break;}
+    }
+    return self.input[position..self.position].iter().collect::<String>()
+  }
+
+  fn read_number(&mut self) -> String {
+    let position = self.position;
+    while let Some(c) = self.ch {
+      if c.is_ascii_digit() {
+        self.read_char();
+      } else {break;}
+    }
+    return self.input[position..self.position].iter().collect::<String>()
+  }
+
+  fn skip_whitespace(&mut self) {
+    while let Some(c) = self.ch {
+      if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+        self.read_char();
+      } else {break;}
+    }
+  }
+  
+  fn peek_char(&self) -> Option<char> {
+    if self.read_position >= self.input.len() {
+      None
+    } else {
+      Some(self.input[self.read_position])
+    }
+  } 
 }
 
 

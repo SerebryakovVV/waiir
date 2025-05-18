@@ -1,11 +1,19 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
   ILLEGAL,
   EOF,
-  IDENT,
-  INT,
+  IDENT(String),
+  INT(String),
+  EQ,
+  NOTEQ,
   ASSIGN,
   PLUS,
+  MINUS,
+  BANG,
+  ASTERISK,
+  SLASH,
+  LT,
+  GT,
   COMMA,
   SEMICOLON,
   LPAREN,
@@ -13,5 +21,12 @@ pub enum Token {
   LBRACE,
   RBRACE,
   FUNCTION,
-  LET
+  LET,
+  TRUE,
+  FALSE,
+  IF,
+  ELSE,
+  RETURN
 }
+
+

@@ -4,19 +4,23 @@ use crate::token::Token;
 
 pub enum Statement {
   LET {
-    name: String,
+    name: Identifier,
     value: Expression
   },
+  RETURN {
+    value: Expression
+  }
 }
 
 
 
 pub enum Expression {
-  IDENTIFIER(String),
+  IDENT(Identifier),
   DUMMY
 }
 
 
+pub struct Identifier {pub value:String}
 
 
 pub struct Program {

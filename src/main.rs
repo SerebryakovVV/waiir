@@ -93,7 +93,6 @@ mod tests {
     }
   }
 
-  
   mod parser_tests {
     use super::*;
 
@@ -103,9 +102,12 @@ mod tests {
       assert_eq!(p.current_token, Token::LET);
       assert_eq!(p.peek_token, Token::IDENT(String::from("foo")));
     }
+
+    #[test]
+    fn initialization_of_parser_fields_with_empty_source() {
+      let p = parser::Parser::new("");
+      assert_eq!(p.current_token, Token::EOF);
+      assert_eq!(p.peek_token, Token::EOF);
+    }
   }
-
-
-
-
 }

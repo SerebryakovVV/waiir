@@ -9,6 +9,8 @@ pub struct Parser {
   pub peek_token: Token
 }
 
+
+
 impl Parser {
   pub fn new(source: &str) -> Self {
     let mut parser = Self {
@@ -27,7 +29,7 @@ impl Parser {
     self.peek_token = self.lexer.next_token();
   }
 
-  fn parse_program(&mut self) -> Program {
+  pub fn parse_program(&mut self) -> Program {
     let mut program = Program::new();
     while self.current_token != Token::EOF {
       let stmt = self.parse_statement();
@@ -40,6 +42,7 @@ impl Parser {
   }
 
   fn parse_statement(&mut self) -> Option<Statement> {
+    println!("{:?}", self.current_token);
     match self.current_token {
       Token::LET    => return self.parse_let_statement(),
       Token::RETURN => return self.parse_return_statement(),
@@ -52,7 +55,10 @@ impl Parser {
     let name: Identifier;
     if let Token::IDENT(s) = &self.peek_token {
       name = Identifier{value:s.clone()};
-    } else {return None;}
+      self.next_token();
+    } else {
+      return None;
+    }
     let statement = Statement::LET { name, value: Expression::DUMMY }; 
     if !self.expect_peek(Token::ASSIGN) {
       return None;
@@ -72,6 +78,7 @@ impl Parser {
   }
 
   fn expect_peek(&mut self, token: Token) -> bool {
+    println!("entered expect peek, token={:?}, self.peek_token={:?}", token, self.peek_token);
     if self.peek_token_is(token) {
       self.next_token();
       true

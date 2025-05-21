@@ -109,5 +109,26 @@ mod tests {
       assert_eq!(p.current_token, Token::EOF);
       assert_eq!(p.peek_token, Token::EOF);
     }
+
+    //  cargo test parser_tests -- --nocapture
+    #[test]
+    fn parse_let_statement_bare() {
+      let mut prsr = parser::Parser::new("
+        let foo = 5;
+        return foo + 5 * 8;
+        let a = 1000;  
+      ");
+      let program = prsr.parse_program();
+      assert_eq!(program.statements[0], ast::Statement::LET { name: ast::Identifier { value: String::from("foo") }, value: ast::Expression::DUMMY });
+      println!("printing the statements now:");
+      for p in program.statements.iter() {
+        println!("{:#?}", p)
+      }
+      println!("stopped printing the statements");
+
+    
+      
+    }
+
   }
 }

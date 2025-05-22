@@ -89,7 +89,7 @@ mod tests {
           tokens.push(tkn);
         }
       }
-      assert_eq!(tokens, [Token::INT(String::from("1")), Token::NOTEQ, Token::INT(String::from("2"))]);
+      assert_eq!(tokens, [Token::INT(1), Token::NOTEQ, Token::INT(2)]);
     }
   }
 
@@ -125,9 +125,17 @@ mod tests {
         println!("{:#?}", p)
       }
       println!("stopped printing the statements");
+    }
 
-    
-      
+    #[test]
+    fn parse_ident_int_bare() {
+      let mut prsr = parser::Parser::new("-abc;!!!!!!123;defg");
+      let program = prsr.parse_program();
+            println!("printing the statements now:");
+      for p in program.statements.iter() {
+        println!("{:#?}", p)
+      }
+      println!("stopped printing the statements");
     }
 
   }

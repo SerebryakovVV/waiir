@@ -88,6 +88,7 @@ impl Lexer {
             };
           } else if t.is_ascii_digit() {
             let num = self.read_number();
+            let num = num.parse::<i32>().unwrap();
             return Token::INT(num);
           } else {
             Token::ILLEGAL

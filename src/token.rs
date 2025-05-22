@@ -3,7 +3,7 @@ pub enum Token {
   ILLEGAL,
   EOF,
   IDENT(String),
-  INT(String),
+  INT(i32),
   EQ,
   NOTEQ,
   ASSIGN,

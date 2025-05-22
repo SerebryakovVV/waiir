@@ -14,10 +14,16 @@ pub enum Statement {
   EXPRESSION(Expression)
 }
 
+pub enum PrefixOperator {
+  NOT,
+  NEG
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
   IDENT(Identifier),
+  INT(i32),
+  PREFIX {operator:Token, right:Box<Expression>},
   DUMMY
 }
 

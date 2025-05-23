@@ -24,6 +24,7 @@ pub enum Expression {
   IDENT(Identifier),
   INT(i32),
   PREFIX {operator:Token, right:Box<Expression>},
+  INFIX {left: Box<Expression>, operator: Token, right: Box<Expression>},
   DUMMY
 }
 

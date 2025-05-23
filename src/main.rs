@@ -129,7 +129,8 @@ mod tests {
 
     #[test]
     fn parse_ident_int_bare() {
-      let mut prsr = parser::Parser::new("-abc;!!!!!!123;defg");
+      let mut prsr = parser::Parser::new("1 + 2 * 3;");
+      // let mut prsr = parser::Parser::new("* 1 + 2 * 3;");
       let program = prsr.parse_program();
             println!("printing the statements now:");
       for p in program.statements.iter() {

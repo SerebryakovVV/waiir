@@ -99,13 +99,34 @@ impl Parser {
     Some(Statement::EXPRESSION(expr))
   }
 
-  // so this part is where he uses the map to get the function associated with a token
-  // parse prefix, then while loop for parse infix
   fn parse_expression(&mut self, precedence: usize) -> Expression {
-    let prefix = self.parse_prefix();
-    // then parse_infix() with this prefix
+    // for now - no idea what that guy was trying to do, he has no checks for nil after calls to this function anywhere
+    let mut left_expression = match &self.current_token {
+      Token::IDENT(s) => Expression::IDENT(Identifier { value: s.clone() }),
+      Token::INT(i)   => Expression::INT(*i),
+      Token::BANG     => self.parse_prefix_expression(),
+      Token::MINUS    => self.parse_prefix_expression(),
+      _               => Expression::DUMMY // TODO: errors, im putting this here, because i have no idea what im doing
+    };
+    
+    while !self.peek_token_is(Token::SEMICOLON) && precedence < self.peek_precedence() {
+      match self.peek_token {
+        Token::PLUS     |
+        Token::MINUS    |
+        Token::SLASH    |
+        Token::ASTERISK |
+        Token::EQ       |
+        Token::NOTEQ    |
+        Token::LT       |
+        Token::GT        => {
+                              self.next_token();
+                              left_expression = self.parse_infix_expression(left_expression);
+                            },
+        _                => return left_expression
+      };
+    }
     // TODO:  noPrefixParseFnError
-    prefix
+    left_expression
   }
 
   fn parse_prefix(&mut self) -> Expression {
@@ -115,7 +136,7 @@ impl Parser {
       Token::INT(i)   => Expression::INT(*i),
       Token::BANG     => self.parse_prefix_expression(),
       Token::MINUS    => self.parse_prefix_expression(),
-      _               => panic!()
+      _               => panic!() // TODO: errors
     };
     println!("it do be parsing idents");
     expr
@@ -126,6 +147,38 @@ impl Parser {
     self.next_token();
     let right = self.parse_expression(PREFIX);
     Expression::PREFIX { operator, right: Box::new(right) }
+  }
+
+  // TODO:
+  // this part is weird, for now
+  // do i even need it?
+  fn parse_infix(&mut self, left: Expression) -> Expression {
+    let expr = match self.current_token {
+      Token::PLUS     |
+      Token::MINUS    |
+      Token::SLASH    |
+      Token::ASTERISK |
+      Token::EQ       |
+      Token::NOTEQ    |
+      Token::LT       |
+      Token::GT        => self.parse_infix_expression(left),
+      _                => panic!()
+    };
+    expr
+  }
+
+  fn parse_infix_expression(&mut self, left: Expression) -> Expression {
+    let operator = self.current_token.clone();
+    let new_expr_left = left;
+    let precedence = self.current_precedence();
+    self.next_token();
+    let new_expr_right = self.parse_expression(precedence);
+    let expr = Expression::INFIX {
+      left: Box::new(new_expr_left), 
+      operator: operator, 
+      right: Box::new(new_expr_right)
+    };
+    expr
   }
 
   // TODO: check on identifier struct and why have i even added it
@@ -158,7 +211,26 @@ impl Parser {
   }
 
   fn peek_error(&self, token: Token) {
+    // TODO:
     // self.errors.push(format!("Expected next token to be {}, got {}", token, self.peek_token)); // TODO: implement Display for Token
     todo!()
+  }
+
+  fn get_precedence(&self, tkn: Token) -> usize {
+    match tkn {
+      Token::EQ    | Token::NOTEQ    => EQUALS,
+      Token::LT    | Token::GT       => LESSGREATER,
+      Token::PLUS  | Token::MINUS    => SUM,
+      Token::SLASH | Token::ASTERISK => PRODUCT,
+      _                              => LOWEST  // TODO: add the errors
+    }
+  }
+
+  fn peek_precedence(&self) -> usize {
+    self.get_precedence(self.peek_token.clone())
+  }
+
+  fn current_precedence(&self) -> usize {
+    self.get_precedence(self.current_token.clone())
   }
 }

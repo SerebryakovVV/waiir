@@ -1,8 +1,9 @@
 use core::panic;
+use std::env::consts;
 
 use crate::lexer::Lexer;
 use crate::token::Token;
-use crate::ast::{Expression, Program, Statement, Identifier};
+use crate::ast::{BlockStatement, Expression, Identifier, Program, Statement};
 
 
 
@@ -66,6 +67,24 @@ impl Parser {
   
 
   fn parse_let_statement(&mut self) -> Option<Statement> {
+    // let name: Identifier;
+    // if let Token::IDENT(s) = &self.peek_token {
+    //   name = Identifier{value:s.clone()};
+    //   self.next_token();
+    // } else {
+    //   return None;
+    // }
+    // let statement = Statement::LET { name, value: Expression::DUMMY }; 
+    // if !self.expect_peek(Token::ASSIGN) {
+    //   return None;
+    // }
+    // while self.current_token != Token::SEMICOLON {
+    //   self.next_token();
+    // }
+    // Some(statement)
+
+
+    
     let name: Identifier;
     if let Token::IDENT(s) = &self.peek_token {
       name = Identifier{value:s.clone()};
@@ -73,22 +92,38 @@ impl Parser {
     } else {
       return None;
     }
-    let statement = Statement::LET { name, value: Expression::DUMMY }; 
+     
     if !self.expect_peek(Token::ASSIGN) {
       return None;
     }
-    while self.current_token != Token::SEMICOLON {
+
+    self.next_token();
+
+    let value = self.parse_expression(LOWEST);
+
+    if self.peek_token_is(Token::SEMICOLON) {
       self.next_token();
     }
-    Some(statement)
+
+
+    Some(Statement::LET {name, value})
+
+
+
   }
 
+
+
+
   fn parse_return_statement(&mut self) -> Option<Statement> {
-    while !self.current_token_is(Token::SEMICOLON) {
+    self.next_token();
+    let value = self.parse_expression(LOWEST);
+    if self.peek_token_is(Token::SEMICOLON) {
       self.next_token();
     }
-    let statement = Statement::RETURN { value: Expression::DUMMY };
-    Some(statement)
+    Some(Statement::RETURN {
+      value
+    })
   }
 
   fn parse_expression_statement(&mut self) -> Option<Statement> {
@@ -106,6 +141,11 @@ impl Parser {
       Token::INT(i)   => Expression::INT(*i),
       Token::BANG     => self.parse_prefix_expression(),
       Token::MINUS    => self.parse_prefix_expression(),
+      Token::TRUE     => Expression::BOOLEAN(true),
+      Token::FALSE    => Expression::BOOLEAN(false),
+      Token::LPAREN   => self.parse_grouped_expression(),
+      Token::IF       => self.parse_if_expression(),
+      Token::FUNCTION => self.parse_function_literal(),
       _               => Expression::DUMMY // TODO: errors, im putting this here, because i have no idea what im doing
     };
     
@@ -122,6 +162,10 @@ impl Parser {
                               self.next_token();
                               left_expression = self.parse_infix_expression(left_expression);
                             },
+        Token::LPAREN    => {
+                              self.next_token();
+                              left_expression = self.parse_call_expression(left_expression);
+                            },
         _                => return left_expression
       };
     }
@@ -129,18 +173,18 @@ impl Parser {
     left_expression
   }
 
-  fn parse_prefix(&mut self) -> Expression {
+  // fn parse_prefix(&mut self) -> Expression {
     
-    let expr = match &self.current_token {
-      Token::IDENT(s) => Expression::IDENT(Identifier { value: s.clone() }),
-      Token::INT(i)   => Expression::INT(*i),
-      Token::BANG     => self.parse_prefix_expression(),
-      Token::MINUS    => self.parse_prefix_expression(),
-      _               => panic!() // TODO: errors
-    };
-    println!("it do be parsing idents");
-    expr
-  }
+  //   let expr = match &self.current_token {
+  //     Token::IDENT(s) => Expression::IDENT(Identifier { value: s.clone() }),
+  //     Token::INT(i)   => Expression::INT(*i),
+  //     Token::BANG     => self.parse_prefix_expression(),
+  //     Token::MINUS    => self.parse_prefix_expression(),
+  //     _               => panic!() // TODO: errors
+  //   };
+  //   println!("it do be parsing idents");
+  //   expr
+  // }
 
   fn parse_prefix_expression(&mut self) -> Expression {
     let operator = self.current_token.clone();
@@ -152,20 +196,20 @@ impl Parser {
   // TODO:
   // this part is weird, for now
   // do i even need it?
-  fn parse_infix(&mut self, left: Expression) -> Expression {
-    let expr = match self.current_token {
-      Token::PLUS     |
-      Token::MINUS    |
-      Token::SLASH    |
-      Token::ASTERISK |
-      Token::EQ       |
-      Token::NOTEQ    |
-      Token::LT       |
-      Token::GT        => self.parse_infix_expression(left),
-      _                => panic!()
-    };
-    expr
-  }
+  // fn parse_infix(&mut self, left: Expression) -> Expression {
+  //   let expr = match self.current_token {
+  //     Token::PLUS     |
+  //     Token::MINUS    |
+  //     Token::SLASH    |
+  //     Token::ASTERISK |
+  //     Token::EQ       |
+  //     Token::NOTEQ    |
+  //     Token::LT       |
+  //     Token::GT        => self.parse_infix_expression(left),
+  //     _                => panic!()
+  //   };
+  //   expr
+  // }
 
   fn parse_infix_expression(&mut self, left: Expression) -> Expression {
     let operator = self.current_token.clone();
@@ -179,6 +223,138 @@ impl Parser {
       right: Box::new(new_expr_right)
     };
     expr
+  }
+
+  fn parse_grouped_expression(&mut self) -> Expression {
+    self.next_token();
+    let expr = self.parse_expression(LOWEST);
+    if !self.expect_peek(Token::RPAREN) {
+      return Expression::DUMMY;
+    }
+    expr
+  }
+
+  fn parse_if_expression(&mut self) -> Expression {
+    if !self.expect_peek(Token::LPAREN) {
+      return Expression::DUMMY;
+    }
+    self.next_token();
+    let condition = self.parse_expression(LOWEST);
+    if !self.expect_peek(Token::RPAREN) {
+      return Expression::DUMMY;
+    }
+    if !self.expect_peek(Token::LBRACE) {
+      return Expression::DUMMY;
+    }
+    let consequence = self.parse_block_statement();
+    let mut alternative = None;
+    if self.peek_token_is(Token::ELSE) {
+      self.next_token();
+      if !self.expect_peek(Token::LBRACE) {
+        return Expression::DUMMY;
+      }
+      alternative = Some(self.parse_block_statement());
+    }
+    Expression::IF {
+      condition: Box::new(condition), 
+      // consequence: Box::new(consequence), 
+      consequence: consequence, 
+      alternative: alternative
+    } 
+  }
+
+  fn parse_block_statement(&mut self) -> BlockStatement {
+    let mut block = BlockStatement {statements: Vec::new()};
+    self.next_token();
+    while !self.current_token_is(Token::RBRACE) && !self.current_token_is(Token::EOF) {
+      let statement = self.parse_statement();
+      if let Some(s) = statement {
+        block.statements.push(s);
+      }
+      self.next_token();
+    };
+    block
+  }
+
+  fn parse_function_literal(&mut self) -> Expression {
+
+    if !self.expect_peek(Token::LPAREN) {
+      return Expression::DUMMY;
+    }
+
+    let parameters = self.parse_function_parameters();
+
+    if !self.expect_peek(Token::LBRACE) {
+      return Expression::DUMMY;
+    }
+
+    let body = self.parse_block_statement();
+
+    Expression::FUNCTION {parameters, body}
+  }
+
+  fn parse_function_parameters(&mut self) -> Vec<Identifier> {
+    let mut identifiers = Vec::new();
+    if self.peek_token_is(Token::RPAREN) {
+      self.next_token();
+      return identifiers;
+    };
+
+    self.next_token();
+
+    
+    
+    if let Token::IDENT(s) = &self.current_token {
+      identifiers.push(Identifier{value: s.clone()});
+    } else {
+      // TODO: add error
+      // the guy doesn't check for the tokens to be identifiers, for some reason
+      panic!();
+    };
+
+    while self.peek_token_is(Token::COMMA) {
+      self.next_token();
+      self.next_token();
+      if let Token::IDENT(s) = &self.current_token {
+        identifiers.push(Identifier{value: s.clone()});
+      } else {
+        // TODO: add error
+        panic!();
+      }
+    };
+
+    if !self.expect_peek(Token::RPAREN) {
+      // TODO: will need to add error
+      panic!()
+    }
+
+    identifiers
+
+  }
+
+  fn parse_call_expression(&mut self, function: Expression) -> Expression {
+    let arguments = self.parse_call_arguments();
+    Expression::CALL {function: Box::new(function), arguments}
+  }
+
+  fn parse_call_arguments(&mut self) -> Vec<Expression> {
+    let mut arguments = Vec::new();
+    if self.peek_token_is(Token::RPAREN) {
+      self.next_token();
+      return arguments;
+    };
+    self.next_token();
+    arguments.push(self.parse_expression(LOWEST));
+    while self.peek_token_is(Token::COMMA) {
+      self.next_token();
+      self.next_token();
+      arguments.push(self.parse_expression(LOWEST));
+    };
+    if !self.expect_peek(Token::RPAREN) {
+      // TODO: also add an error, or rewrite everything with result/option or something
+      panic!();
+    };
+    arguments
   }
 
   // TODO: check on identifier struct and why have i even added it
@@ -218,11 +394,12 @@ impl Parser {
 
   fn get_precedence(&self, tkn: Token) -> usize {
     match tkn {
-      Token::EQ    | Token::NOTEQ    => EQUALS,
-      Token::LT    | Token::GT       => LESSGREATER,
-      Token::PLUS  | Token::MINUS    => SUM,
-      Token::SLASH | Token::ASTERISK => PRODUCT,
-      _                              => LOWEST  // TODO: add the errors
+      Token::EQ     | Token::NOTEQ    => EQUALS,
+      Token::LT     | Token::GT       => LESSGREATER,
+      Token::PLUS   | Token::MINUS    => SUM,
+      Token::SLASH  | Token::ASTERISK => PRODUCT,
+      Token::LPAREN                   => CALL,
+      _                               => LOWEST  // TODO: add the errors
     }
   }
 

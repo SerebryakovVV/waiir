@@ -11,7 +11,8 @@ pub enum Statement {
   RETURN {
     value: Expression
   },
-  EXPRESSION(Expression)
+  EXPRESSION(Expression),
+  // BLOCK(Vec<Statement>)
 }
 
 pub enum PrefixOperator {
@@ -23,11 +24,36 @@ pub enum PrefixOperator {
 pub enum Expression {
   IDENT(Identifier),
   INT(i32),
-  PREFIX {operator:Token, right:Box<Expression>},
-  INFIX {left: Box<Expression>, operator: Token, right: Box<Expression>},
+  PREFIX {
+    operator:Token, 
+    right:Box<Expression>
+  },
+  INFIX {
+    left: Box<Expression>, 
+    operator: Token, 
+    right: Box<Expression>
+  },
+  BOOLEAN(bool),
+  IF {
+    condition: Box<Expression>,
+    consequence: BlockStatement,
+    alternative: Option<BlockStatement>
+  },
+  FUNCTION {
+    parameters: Vec<Identifier>,
+    body: BlockStatement
+  },
+  CALL {
+    function: Box<Expression>,
+    arguments: Vec<Expression>
+  },
   DUMMY
 }
 
+#[derive(Debug, PartialEq)]
+pub struct BlockStatement {
+  pub statements: Vec<Statement>
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Identifier {pub value:String}

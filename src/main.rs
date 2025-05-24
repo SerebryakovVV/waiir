@@ -129,7 +129,13 @@ mod tests {
 
     #[test]
     fn parse_ident_int_bare() {
-      let mut prsr = parser::Parser::new("1 + 2 * 3;");
+      let mut prsr = parser::Parser::new("let b = fn (a, b) {return a + b}");
+      // let mut prsr = parser::Parser::new("add(a, b, c);");
+      // let mut prsr = parser::Parser::new("add(a + b + c * d / f + g, 456 + sum);");
+      // let mut prsr = parser::Parser::new("fn(x, y, z) {};");
+      // let mut prsr = parser::Parser::new("if (x < y) { x } else {5+4*9};");
+      // let mut prsr = parser::Parser::new("1 + (2 + 3) + 4;");
+      // let mut prsr = parser::Parser::new("3 + 4 * 5 == 3 * 1 + 4 * 5;");
       // let mut prsr = parser::Parser::new("* 1 + 2 * 3;");
       let program = prsr.parse_program();
             println!("printing the statements now:");

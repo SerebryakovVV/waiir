@@ -3,6 +3,7 @@ mod token;
 mod repl;
 mod ast;
 mod parser;
+mod evaluator;
 use token::Token;
 
 

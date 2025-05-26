@@ -1,6 +1,16 @@
 use crate::token::Token;
 
-// both enums should have TokenLiteral() -> String
+// TODO: add some kind of displaying
+
+// we have statement, expression, program and blockstatement which can be evaluated
+
+#[derive(Debug, PartialEq)]
+pub enum Node {
+  Statement(Statement),
+  Expression(Expression),
+  Program(Program),
+  BlockStatement(BlockStatement)
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {

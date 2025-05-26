@@ -1,10 +1,8 @@
 use core::panic;
 use std::env::consts;
-
 use crate::lexer::Lexer;
 use crate::token::Token;
 use crate::ast::{BlockStatement, Expression, Identifier, Program, Statement};
-
 
 
 const LOWEST: usize = 1;
@@ -16,7 +14,6 @@ const PREFIX: usize = 6;
 const CALL: usize = 7;
 
 
-
 pub struct Parser {
   lexer: Lexer,
   errors: Vec<String>,
@@ -24,8 +21,7 @@ pub struct Parser {
   pub peek_token: Token
 }
 
-
-
+  // TODO: check on identifier struct and why have i even added it
 impl Parser {
   pub fn new(source: &str) -> Self {
     let mut parser = Self {
@@ -65,26 +61,7 @@ impl Parser {
     }
   }
   
-
   fn parse_let_statement(&mut self) -> Option<Statement> {
-    // let name: Identifier;
-    // if let Token::IDENT(s) = &self.peek_token {
-    //   name = Identifier{value:s.clone()};
-    //   self.next_token();
-    // } else {
-    //   return None;
-    // }
-    // let statement = Statement::LET { name, value: Expression::DUMMY }; 
-    // if !self.expect_peek(Token::ASSIGN) {
-    //   return None;
-    // }
-    // while self.current_token != Token::SEMICOLON {
-    //   self.next_token();
-    // }
-    // Some(statement)
-
-
-    
     let name: Identifier;
     if let Token::IDENT(s) = &self.peek_token {
       name = Identifier{value:s.clone()};
@@ -92,28 +69,16 @@ impl Parser {
     } else {
       return None;
     }
-     
     if !self.expect_peek(Token::ASSIGN) {
       return None;
     }
-
     self.next_token();
-
     let value = self.parse_expression(LOWEST);
-
     if self.peek_token_is(Token::SEMICOLON) {
       self.next_token();
     }
-
-
     Some(Statement::LET {name, value})
-
-
-
   }
-
-
-
 
   fn parse_return_statement(&mut self) -> Option<Statement> {
     self.next_token();
@@ -135,7 +100,6 @@ impl Parser {
   }
 
   fn parse_expression(&mut self, precedence: usize) -> Expression {
-    // for now - no idea what that guy was trying to do, he has no checks for nil after calls to this function anywhere
     let mut left_expression = match &self.current_token {
       Token::IDENT(s) => Expression::IDENT(Identifier { value: s.clone() }),
       Token::INT(i)   => Expression::INT(*i),
@@ -146,9 +110,8 @@ impl Parser {
       Token::LPAREN   => self.parse_grouped_expression(),
       Token::IF       => self.parse_if_expression(),
       Token::FUNCTION => self.parse_function_literal(),
-      _               => Expression::DUMMY // TODO: errors, im putting this here, because i have no idea what im doing
+      _               => Expression::DUMMY // TODO: errors
     };
-    
     while !self.peek_token_is(Token::SEMICOLON) && precedence < self.peek_precedence() {
       match self.peek_token {
         Token::PLUS     |
@@ -173,19 +136,6 @@ impl Parser {
     left_expression
   }
 
-  // fn parse_prefix(&mut self) -> Expression {
-    
-  //   let expr = match &self.current_token {
-  //     Token::IDENT(s) => Expression::IDENT(Identifier { value: s.clone() }),
-  //     Token::INT(i)   => Expression::INT(*i),
-  //     Token::BANG     => self.parse_prefix_expression(),
-  //     Token::MINUS    => self.parse_prefix_expression(),
-  //     _               => panic!() // TODO: errors
-  //   };
-  //   println!("it do be parsing idents");
-  //   expr
-  // }
-
   fn parse_prefix_expression(&mut self) -> Expression {
     let operator = self.current_token.clone();
     self.next_token();
@@ -193,36 +143,17 @@ impl Parser {
     Expression::PREFIX { operator, right: Box::new(right) }
   }
 
-  // TODO:
-  // this part is weird, for now
-  // do i even need it?
-  // fn parse_infix(&mut self, left: Expression) -> Expression {
-  //   let expr = match self.current_token {
-  //     Token::PLUS     |
-  //     Token::MINUS    |
-  //     Token::SLASH    |
-  //     Token::ASTERISK |
-  //     Token::EQ       |
-  //     Token::NOTEQ    |
-  //     Token::LT       |
-  //     Token::GT        => self.parse_infix_expression(left),
-  //     _                => panic!()
-  //   };
-  //   expr
-  // }
-
   fn parse_infix_expression(&mut self, left: Expression) -> Expression {
     let operator = self.current_token.clone();
     let new_expr_left = left;
     let precedence = self.current_precedence();
     self.next_token();
     let new_expr_right = self.parse_expression(precedence);
-    let expr = Expression::INFIX {
+    Expression::INFIX {
       left: Box::new(new_expr_left), 
       operator: operator, 
       right: Box::new(new_expr_right)
-    };
-    expr
+    }
   }
 
   fn parse_grouped_expression(&mut self) -> Expression {
@@ -257,7 +188,6 @@ impl Parser {
     }
     Expression::IF {
       condition: Box::new(condition), 
-      // consequence: Box::new(consequence), 
       consequence: consequence, 
       alternative: alternative
     } 
@@ -277,19 +207,14 @@ impl Parser {
   }
 
   fn parse_function_literal(&mut self) -> Expression {
-
     if !self.expect_peek(Token::LPAREN) {
       return Expression::DUMMY;
     }
-
     let parameters = self.parse_function_parameters();
-
     if !self.expect_peek(Token::LBRACE) {
       return Expression::DUMMY;
     }
-
     let body = self.parse_block_statement();
-
     Expression::FUNCTION {parameters, body}
   }
 
@@ -299,11 +224,7 @@ impl Parser {
       self.next_token();
       return identifiers;
     };
-
     self.next_token();
-
-    
-    
     if let Token::IDENT(s) = &self.current_token {
       identifiers.push(Identifier{value: s.clone()});
     } else {
@@ -311,7 +232,6 @@ impl Parser {
       // the guy doesn't check for the tokens to be identifiers, for some reason
       panic!();
     };
-
     while self.peek_token_is(Token::COMMA) {
       self.next_token();
       self.next_token();
@@ -322,14 +242,11 @@ impl Parser {
         panic!();
       }
     };
-
     if !self.expect_peek(Token::RPAREN) {
       // TODO: will need to add error
       panic!()
     }
-
     identifiers
-
   }
 
   fn parse_call_expression(&mut self, function: Expression) -> Expression {
@@ -355,12 +272,6 @@ impl Parser {
       panic!();
     };
     arguments
-  }
-
-  // TODO: check on identifier struct and why have i even added it
-  fn parse_ident(&self) -> Expression {
-    // not needed, i inlined it into parse_prefix, will clean later
-    unreachable!()
   }
 
   fn expect_peek(&mut self, token: Token) -> bool {

@@ -14,6 +14,59 @@ use crate::{ast::{BlockStatement, Expression, Node, Program, Statement}, token::
 
 
 
+
+
+
+// NIGHTTIME CODING SESSION START
+trait Evaluable {
+  fn eval(self) -> Object;
+}
+
+pub fn eval<T: Evaluable>(node: T) -> Object {
+  node.eval()
+}
+
+impl Evaluable for Expression {
+  fn eval(self) -> Object {
+    match expr {
+      Expression::INT(i)                     => Object::INT(i), 
+      Expression::BOOLEAN(b)                 => Object::BOOLEAN(b), 
+      Expression::PREFIX { operator, right } => eval_prefix_expression(operator, eval_expression(*right)),
+      _                                      => panic!()
+  }
+  }
+}
+
+impl Evaluable for Program {
+  fn eval(self) -> Object {
+    let mut result = Object::NULL;
+    for s in pr.statements {
+      result = eval(Node::Statement(s));
+    };
+    result
+  }
+}
+
+impl Evaluable for Statement {
+  fn eval(self) -> Object {
+    match stmt {
+      Statement::EXPRESSION(expr) => eval(Node::Expression(expr)),
+      _                           => panic!()
+    } 
+  }
+}
+
+impl Evaluable for BlockStatement {
+  fn eval(self) -> Object {
+    todo!();
+  }
+}
+// NIGHTTIME CODING SESSION END
+
+
+
+
+
 // eval_program = eval_statements in the book
 
 

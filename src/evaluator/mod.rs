@@ -1,8 +1,10 @@
 
 mod object;
+
+
 use object::Object;
 
-use crate::ast::{BlockStatement, Expression, Node, Program, Statement};
+use crate::{ast::{BlockStatement, Expression, Node, Program, Statement}, token::Token};
 
 
 // static TRUE: &'static Object = &Object::BOOLEAN(true);
@@ -11,16 +13,21 @@ use crate::ast::{BlockStatement, Expression, Node, Program, Statement};
 
 
 
+
+
+
 // TODO: change the enum wrapping to something not retarded
 // TODO: add evaluation to repl
+// TODO: add the inspect method, this is important
 pub fn eval(node: Node) -> Object {
   // pattern match all that stuff here
   match node {
     Node::Expression(expr)   => {
                                   match expr {
-                                    Expression::INT(i)     => Object::INT(i), 
-                                    Expression::BOOLEAN(b) => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
-                                    _                      => panic!()
+                                    Expression::INT(i)                     => Object::INT(i), 
+                                    Expression::BOOLEAN(b)                 => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
+                                    Expression::PREFIX { operator, right } => eval_prefix_expression(operator, eval(right)),
+                                    _                                      => panic!()
                                   }
     },
     Node::Program(pr)        => eval_statements(pr),
@@ -43,6 +50,9 @@ fn eval_statements(pr: Program) -> Object {
   result
 }
 
+fn eval_prefix_expression(operator: Token, right: Object) -> Object {
+
+}
 
 #[cfg(test)]
 mod tests {

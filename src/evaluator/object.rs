@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports, unused_variables, unreachable_patterns)]
+
 use std::fmt::Display;
 
 // TODO: maybe will add objecttype and inspect, maybe not

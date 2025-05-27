@@ -1,3 +1,6 @@
+
+#![allow(dead_code, unused_imports, unused_variables)]
+
 use core::panic;
 use std::env::consts;
 use crate::lexer::Lexer;
@@ -53,7 +56,7 @@ impl Parser {
   }
 
   fn parse_statement(&mut self) -> Option<Statement> {
-    println!("{:?}", self.current_token);
+    // println!("{:?}", self.current_token);
     match self.current_token {
       Token::LET    => return self.parse_let_statement(),
       Token::RETURN => return self.parse_return_statement(),

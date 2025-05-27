@@ -1,3 +1,4 @@
+#![allow(dead_code, unused_imports, unused_variables)]
 
 mod object;
 
@@ -13,36 +14,34 @@ use crate::{ast::{BlockStatement, Expression, Node, Program, Statement}, token::
 
 
 
-
+// eval_program = eval_statements in the book
 
 
 // TODO: change the enum wrapping to something not retarded
 // TODO: add evaluation to repl
 // TODO: add the inspect method, this is important
 pub fn eval(node: Node) -> Object {
-  // pattern match all that stuff here
   match node {
-    Node::Expression(expr)   => {
-                                  match expr {
-                                    Expression::INT(i)                     => Object::INT(i), 
-                                    Expression::BOOLEAN(b)                 => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
-                                    Expression::PREFIX { operator, right } => eval_prefix_expression(operator, eval(right)),
-                                    _                                      => panic!()
-                                  }
-    },
-    Node::Program(pr)        => eval_statements(pr),
-    Node::Statement(stmt)    => {
-                                  match stmt {
-                                    Statement::EXPRESSION(expr) => eval(Node::Expression(expr)),
-                                    _                           => panic!()
-                                  }
-    },
-    Node::BlockStatement(bs) => panic!(),
+    Node::Expression(expr)   => eval_expression(expr),
+    Node::Program(pr)        => eval_program(pr),
+    Node::Statement(stmt)    => eval_statement(stmt),
+    Node::BlockStatement(bs) => eval_block_statement(bs)
+  }
+}
+
+// TODO: either do normal polymorhpism, or do something with the eval function, why is it even there. I will hink about deleting the node and just having 4 funcitons
+
+fn eval_expression(expr: Expression) -> Object {
+  match expr {
+    Expression::INT(i)                     => Object::INT(i), 
+    Expression::BOOLEAN(b)                 => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
+    Expression::PREFIX { operator, right } => eval_prefix_expression(operator, eval_expression(*right)),
+    _                                      => panic!()
   }
 }
 
 
-fn eval_statements(pr: Program) -> Object {
+fn eval_program(pr: Program) -> Object {
   let mut result = Object::NULL;
   for s in pr.statements {
     result = eval(Node::Statement(s));
@@ -50,9 +49,53 @@ fn eval_statements(pr: Program) -> Object {
   result
 }
 
-fn eval_prefix_expression(operator: Token, right: Object) -> Object {
 
+fn eval_statement(stmt: Statement) -> Object {
+  match stmt {
+    Statement::EXPRESSION(expr) => eval(Node::Expression(expr)),
+    _                           => panic!()
+  } 
 }
+
+fn eval_block_statement(bs: BlockStatement) -> Object {
+  todo!()
+}
+
+
+
+fn eval_prefix_expression(operator: Token, right: Object) -> Object {
+  match operator {
+    Token::BANG  => eval_bang_operator_expression(right),
+    Token::MINUS => eval_minus_prefix_operator_expression(right),
+    _            => Object::NULL
+  }
+  
+}
+
+fn eval_bang_operator_expression(right: Object) -> Object {
+  match right {
+    Object::BOOLEAN(b) => if b {Object::BOOLEAN(false)} else {Object::BOOLEAN(true)},
+    Object::NULL       => Object::BOOLEAN(true),
+    _                  => Object::BOOLEAN(false)
+  }
+}
+
+
+fn eval_minus_prefix_operator_expression(right: Object) -> Object {
+  match right {
+    Object::INT(i) => Object::INT(-i),
+    _              => Object::NULL      
+  }
+}
+
+
+
+
+
+
+
+
+
 
 #[cfg(test)]
 mod tests {

@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports, unused_variables)]
+
 use std::io::{self, Write};
 use crate::lexer;
 use crate::parser::Parser;

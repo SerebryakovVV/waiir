@@ -278,7 +278,7 @@ impl Parser {
   }
 
   fn expect_peek(&mut self, token: Token) -> bool {
-    println!("entered expect peek, token={:?}, self.peek_token={:?}", token, self.peek_token);
+    // println!("entered expect peek, token={:?}, self.peek_token={:?}", token, self.peek_token);
     if self.peek_token_is(token) {
       self.next_token();
       true

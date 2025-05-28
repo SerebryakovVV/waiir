@@ -13,7 +13,12 @@ use crate::{ast::{BlockStatement, Expression, Node, Program, Statement}, token::
 // same for null
 
 
+// eval_program = eval_statements in the book
 
+
+// TODO: change the enum wrapping to something not retarded
+// TODO: add evaluation to repl
+// TODO: add the inspect method, this is important
 
 
 
@@ -29,10 +34,12 @@ pub fn eval<T: Evaluable>(node: T) -> Object {   // TODO: i dont need neither tr
 impl Evaluable for Expression {
   fn eval(self) -> Object {
     match self {
-      Expression::INT(i)                     => Object::INT(i), 
-      Expression::BOOLEAN(b)                 => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
-      Expression::PREFIX { operator, right } => eval_prefix_expression(operator, eval(*right)),
-      _                                      => panic!()
+      Expression::INT(i)                                   => Object::INT(i), 
+      Expression::BOOLEAN(b)                               => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
+      Expression::PREFIX {operator, right}                 => eval_prefix_expression(operator, eval(*right)),
+      Expression::INFIX {left, operator, right}            => eval_infix_expression(eval(*left), operator, eval(*right)),
+      Expression::IF {condition, consequence, alternative} => eval_if_expression(condition, consequence, alternative),
+      _                                                    => panic!()
   }
   }
 }
@@ -58,7 +65,11 @@ impl Evaluable for Statement {
 
 impl Evaluable for BlockStatement {
   fn eval(self) -> Object {
-    todo!();
+    let mut result = Object::NULL;
+    for s in self.statements {
+      result = eval(s);
+    };
+    result
   }
 }
 
@@ -67,23 +78,60 @@ impl Evaluable for BlockStatement {
 
 
 
-// eval_program = eval_statements in the book
-
-
-// TODO: change the enum wrapping to something not retarded
-// TODO: add evaluation to repl
-// TODO: add the inspect method, this is important
 
 
 
 
 
 
+fn eval_if_expression(condition: Box<Expression>, consequence: BlockStatement, alternative: Option<BlockStatement>) -> Object {
+  let evaluated_condition = eval(*condition);
+  match (is_truthy(evaluated_condition), alternative) {  // look at this sexy pattern matching, oh my god! can your go do this? hmmm??
+    (true, _)          => eval(consequence),
+    (false, Some(alt)) => eval(alt),
+    (false, None)      => Object::NULL
+  }
+}
 
 
 
+fn is_truthy(condition: Object) -> bool {
+  match condition {
+    Object::NULL       => false,
+    Object::BOOLEAN(b) => if b {true} else {false},
+    _                  => true
+  }
+}
 
+fn eval_infix_expression(left: Object, operator: Token, right: Object) -> Object {
+  match (left, right) {
+    (Object::INT(l), Object::INT(r))         => eval_integer_infix_expression(l, operator, r),
+    (Object::BOOLEAN(l), Object::BOOLEAN(r)) => eval_boolean_infix_expression(l, operator, r), 
+    _                                        => Object::NULL
+  }
+}
 
+fn eval_integer_infix_expression(left: i32, operator: Token, right: i32) -> Object {
+  match operator {
+    Token::PLUS     => Object::INT(left + right),
+    Token::MINUS    => Object::INT(left - right),
+    Token::ASTERISK => Object::INT(left * right),
+    Token::SLASH    => if right == 0 {Object::NULL} else {Object::INT(left/right)},
+    Token::GT       => Object::BOOLEAN(left > right),
+    Token::LT       => Object::BOOLEAN(left < right),
+    Token::EQ       => Object::BOOLEAN(left == right),
+    Token::NOTEQ    => Object::BOOLEAN(left != right),
+    _               => Object::NULL
+  }
+}
+
+fn eval_boolean_infix_expression(left: bool, operator: Token, right: bool) -> Object {
+  match operator {
+      Token::EQ    => Object::BOOLEAN(left == right),
+      Token::NOTEQ => Object::BOOLEAN(left != right),
+      _            => Object::NULL
+  }
+}
 
 fn eval_prefix_expression(operator: Token, right: Object) -> Object {
   match operator {
@@ -101,7 +149,6 @@ fn eval_bang_operator_expression(right: Object) -> Object {
     _                  => Object::BOOLEAN(false)
   }
 }
-
 
 fn eval_minus_prefix_operator_expression(right: Object) -> Object {
   match right {

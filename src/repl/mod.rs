@@ -41,7 +41,7 @@ pub fn start() {
     if input_buffer.trim() == "q" {return;}
     let mut prsr = Parser::new(&input_buffer);
     let prgrm = prsr.parse_program();
-    let res = eval(crate::ast::Node::Program(prgrm));   // TODO: again, i need to do something with this enum wrapping stuff 
+    let res = eval(prgrm);   // TODO: again, i need to do something with this enum wrapping stuff 
     println!("{}", res);
 
 

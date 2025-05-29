@@ -44,43 +44,57 @@ impl Evaluable for Expression {
   }
 }
 
-impl Evaluable for Program {
+impl Evaluable for Program {  // this is eval_statements
   fn eval(self) -> Object {
     let mut result = Object::NULL;
     for s in self.statements {
       result = eval(s);
+      if let Object::RETURN(r) = result {  // TODO: check this later
+        return *r;
+      }
     };
     result
   }
 }
+
+
+
+
 
 impl Evaluable for Statement {
   fn eval(self) -> Object {
     match self {
       Statement::EXPRESSION(expr) => eval(expr),
+      Statement::RETURN {value}   => Object::RETURN(Box::new(eval(value))),
       _                           => panic!()
     } 
   }
 }
 
-impl Evaluable for BlockStatement {
+impl Evaluable for BlockStatement { // in the book this calls evalStatements too
   fn eval(self) -> Object {
     let mut result = Object::NULL;
     for s in self.statements {
       result = eval(s);
+      if let Object::RETURN(_) = result {  // im half asleep, TODO: check if this even works
+        return result;
+      }
     };
     result
   }
 }
 
 
-
-
-
-
-
-
-
+//  func evalBlockStatement(block *ast.BlockStatement) object.Object {
+//  var result object.Object
+//  for _, statement := range block.Statements {
+//  result = Eval(statement)
+//  if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
+//  return result
+//  }
+//  }
+//  return result
+//  }
 
 
 

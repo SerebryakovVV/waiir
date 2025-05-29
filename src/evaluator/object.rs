@@ -7,6 +7,7 @@ use std::fmt::Display;
 pub enum Object {
   INT(i32),
   BOOLEAN(bool),
+  RETURN(Box<Object>),
   NULL
 }
 

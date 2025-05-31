@@ -5,7 +5,7 @@ pub mod environment;
 
 use std::{cell::RefCell, rc::Rc, sync::Once};
 
-use environment::Environment;
+use environment::{new_enclosed_environment, Environment};
 use object::Object;
 
 use crate::{ast::{BlockStatement, Expression, Identifier, Node, Program, Statement}, token::Token};
@@ -27,7 +27,7 @@ use crate::{ast::{BlockStatement, Expression, Identifier, Node, Program, Stateme
 
 
 
-
+// the final boss of code formatting
 impl Expression {
   fn eval(self, env: Rc<RefCell<Environment>>) -> Object {
     match self {
@@ -54,10 +54,64 @@ impl Expression {
                                                                 eval_infix_expression(val_left, operator, val_right)
                                                               },
       Expression::IF {condition, consequence, alternative} => eval_if_expression(condition, consequence, alternative, env),
-      Expression::FUNCTION {parameters, body}              => Object::FUNCTION {parameters, body, env}, 
+      Expression::FUNCTION {parameters, body}              => Object::FUNCTION {parameters, body, env},
+      
+      Expression::CALL {function, arguments}               => {
+                                                                let func = function.eval(Rc::clone(&env));
+                                                                if is_error(&func) {
+                                                                  return func
+                                                                };
+
+                                                                let args = eval_expressions(arguments, Rc::clone(&env));
+
+                                                                if let Err(e) = args {
+                                                                  return e;
+                                                                } else {
+                                                                  return apply_function(func, args.unwrap());
+                                                                }
+                                                              },
+
       _                                                    => panic!()
   }
   }
+}
+
+
+fn apply_function(func: Object, args: Vec<Object>) -> Object {
+  if let Object::FUNCTION { parameters, body, env } = func {
+    let extended_env = extend_function_env(parameters, env, args);
+    let evaluated = body.eval(extended_env);
+    return unwrap_return_value(evaluated);
+  } else {
+    return Object::ERROR(String::from("Not a function"));
+  }
+}
+
+fn extend_function_env(params: Vec<Identifier>, env: Rc<RefCell<Environment>>, args: Vec<Object>) -> Rc<RefCell<Environment>> {
+  let new_env = new_enclosed_environment(env);
+  for (i, p) in params.iter().enumerate() {
+    new_env.borrow_mut().set(p.value.clone(), args[i].clone());
+  };
+  new_env
+}
+
+fn unwrap_return_value(obj: Object) -> Object {
+  match obj {
+    Object::RETURN(r) => *r,
+    _                 => obj
+  } 
+}
+
+fn eval_expressions(exprs: Vec<Expression>, env: Rc<RefCell<Environment>>) -> Result<Vec<Object>, Object> {
+  let mut res = Vec::<Object>::new();
+  for e in exprs {
+    let evaled_expr = e.eval(Rc::clone(&env));
+    if is_error(&evaled_expr) {
+      return Err(evaled_expr);
+    }
+    res.push(evaled_expr);
+  };
+  Ok(res)
 }
 
 
@@ -132,7 +186,7 @@ fn is_error(obj: &Object) -> bool {
 
 fn eval_identifier_expression(ident: Identifier, env: Rc<RefCell<Environment>>) -> Object {
   match env.borrow_mut().get(ident.value) {
-    Some(v) => (*v).clone(), // TODO: clone again...
+    Some(v) => v,
     None    => Object::ERROR(String::from("Identifier not found"))
   }
 }

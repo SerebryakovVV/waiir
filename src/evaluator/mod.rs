@@ -1,8 +1,9 @@
 #![allow(dead_code, unused_imports, unused_variables)]
 
 mod object;
+mod environment;
 
-
+use environment::Environment;
 use object::Object;
 
 use crate::{ast::{BlockStatement, Expression, Node, Program, Statement}, token::Token};
@@ -19,7 +20,7 @@ use crate::{ast::{BlockStatement, Expression, Node, Program, Statement}, token::
 // TODO: change the enum wrapping to something not retarded
 // TODO: add evaluation to repl
 // TODO: add the inspect method, this is important
-
+// TODO: error messages with parameters
 
 
 
@@ -36,8 +37,24 @@ impl Evaluable for Expression {
     match self {
       Expression::INT(i)                                   => Object::INT(i), 
       Expression::BOOLEAN(b)                               => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
-      Expression::PREFIX {operator, right}                 => eval_prefix_expression(operator, eval(*right)),
-      Expression::INFIX {left, operator, right}            => eval_infix_expression(eval(*left), operator, eval(*right)),
+      Expression::PREFIX {operator, right}                 => {
+                                                                let val = eval(*right);
+                                                                if is_error(&val) {
+                                                                  return val;
+                                                                }
+                                                                eval_prefix_expression(operator, val)
+                                                              },
+      Expression::INFIX {left, operator, right}            => {
+                                                                let val_left = eval(*left);
+                                                                if is_error(&val_left) {
+                                                                  return val_left;
+                                                                }
+                                                                let val_right = eval(*right);
+                                                                if is_error(&val_right) {
+                                                                  return val_right;
+                                                                }
+                                                                eval_infix_expression(val_left, operator, val_right)
+                                                              },
       Expression::IF {condition, consequence, alternative} => eval_if_expression(condition, consequence, alternative),
       _                                                    => panic!()
   }
@@ -49,8 +66,10 @@ impl Evaluable for Program {  // this is eval_statements
     let mut result = Object::NULL;
     for s in self.statements {
       result = eval(s);
-      if let Object::RETURN(r) = result {  // TODO: check this later
-        return *r;
+      match result {
+        Object::RETURN(r) => return *r,
+        Object::ERROR(_)  => return result,
+        _                 => continue
       }
     };
     result
@@ -64,21 +83,37 @@ impl Evaluable for Program {  // this is eval_statements
 impl Evaluable for Statement {
   fn eval(self) -> Object {
     match self {
-      Statement::EXPRESSION(expr) => eval(expr),
-      Statement::RETURN {value}   => Object::RETURN(Box::new(eval(value))),
-      _                           => panic!()
+      Statement::EXPRESSION(expr)  => eval(expr),
+      Statement::RETURN {value}    => {
+                                        let val = eval(value);
+                                        if is_error(&val) {
+                                          return val;
+                                        } else {
+                                          return Object::RETURN(Box::new(val));
+                                        }
+                                      },
+      Statement::LET {name, value} => {
+                                        let val = eval(value);
+                                        if is_error(&val) {
+                                          return val
+                                        } else {
+                                          todo!()
+                                        }
+                                      },
+      _                            => panic!()
     } 
   }
 }
 
-impl Evaluable for BlockStatement { // in the book this calls evalStatements too
+impl Evaluable for BlockStatement {
   fn eval(self) -> Object {
     let mut result = Object::NULL;
     for s in self.statements {
       result = eval(s);
-      if let Object::RETURN(_) = result {  // im half asleep, TODO: check if this even works
-        return result;
-      }
+      match result {
+        Object::RETURN(_) | Object::ERROR(_) => return result,
+        _                                    => continue
+      };
     };
     result
   }
@@ -98,12 +133,24 @@ impl Evaluable for BlockStatement { // in the book this calls evalStatements too
 
 
 
+fn is_error(obj: &Object) -> bool {
+  match obj {
+    Object::ERROR(_) => true,
+    _                => false 
+  }
+} 
+
+
+
 fn eval_if_expression(condition: Box<Expression>, consequence: BlockStatement, alternative: Option<BlockStatement>) -> Object {
   let evaluated_condition = eval(*condition);
+  if is_error(&evaluated_condition) {
+    return evaluated_condition;
+  }
   match (is_truthy(evaluated_condition), alternative) {  // look at this sexy pattern matching, oh my god! can your go do this? hmmm??
     (true, _)          => eval(consequence),
     (false, Some(alt)) => eval(alt),
-    (false, None)      => Object::NULL
+    (false, None)      => Object::ERROR(String::from("No alternative provided in the if-else statement"))
   }
 }
 
@@ -121,7 +168,7 @@ fn eval_infix_expression(left: Object, operator: Token, right: Object) -> Object
   match (left, right) {
     (Object::INT(l), Object::INT(r))         => eval_integer_infix_expression(l, operator, r),
     (Object::BOOLEAN(l), Object::BOOLEAN(r)) => eval_boolean_infix_expression(l, operator, r), 
-    _                                        => Object::NULL
+    _                                        => Object::ERROR(String::from("Infix expression operands aren't ints or booleans"))
   }
 }
 
@@ -130,12 +177,12 @@ fn eval_integer_infix_expression(left: i32, operator: Token, right: i32) -> Obje
     Token::PLUS     => Object::INT(left + right),
     Token::MINUS    => Object::INT(left - right),
     Token::ASTERISK => Object::INT(left * right),
-    Token::SLASH    => if right == 0 {Object::NULL} else {Object::INT(left/right)},
+    Token::SLASH    => if right == 0 {Object::ERROR(String::from("Zero division error"))} else {Object::INT(left/right)},
     Token::GT       => Object::BOOLEAN(left > right),
     Token::LT       => Object::BOOLEAN(left < right),
     Token::EQ       => Object::BOOLEAN(left == right),
     Token::NOTEQ    => Object::BOOLEAN(left != right),
-    _               => Object::NULL
+    _               => Object::ERROR(String::from("Unknown operator for integer infix expression"))
   }
 }
 
@@ -143,7 +190,7 @@ fn eval_boolean_infix_expression(left: bool, operator: Token, right: bool) -> Ob
   match operator {
       Token::EQ    => Object::BOOLEAN(left == right),
       Token::NOTEQ => Object::BOOLEAN(left != right),
-      _            => Object::NULL
+      _            => Object::ERROR(String::from("Unknown operator for boolean infix expression"))
   }
 }
 
@@ -151,7 +198,7 @@ fn eval_prefix_expression(operator: Token, right: Object) -> Object {
   match operator {
     Token::BANG  => eval_bang_operator_expression(right),
     Token::MINUS => eval_minus_prefix_operator_expression(right),
-    _            => Object::NULL
+    _            => Object::ERROR(String::from("Unknown prefix operator"))
   }
   
 }
@@ -167,7 +214,7 @@ fn eval_bang_operator_expression(right: Object) -> Object {
 fn eval_minus_prefix_operator_expression(right: Object) -> Object {
   match right {
     Object::INT(i) => Object::INT(-i),
-    _              => Object::NULL      
+    _              => Object::ERROR(String::from("Only ints are supported as prefix minus operand"))      
   }
 }
 

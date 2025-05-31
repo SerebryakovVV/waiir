@@ -6,7 +6,7 @@ use crate::token::Token;
 
 // we have statement, expression, program and blockstatement which can be evaluated
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Node {
   Statement(Statement),
   Expression(Expression),
@@ -14,7 +14,7 @@ pub enum Node {
   BlockStatement(BlockStatement)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
   LET {
     name: Identifier,
@@ -32,7 +32,7 @@ pub enum PrefixOperator {
   NEG
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
   IDENT(Identifier),
   INT(i32),
@@ -62,16 +62,16 @@ pub enum Expression {
   DUMMY
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BlockStatement {
   pub statements: Vec<Statement>
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Identifier {pub value:String}
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Program {
   pub statements: Vec<Statement>
 }

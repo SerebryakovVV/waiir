@@ -16,7 +16,7 @@ pub enum Object {
   FUNCTION {
     parameters: Vec<Identifier>,
     body: BlockStatement,
-    env: Environment
+    env: &mut Environment
   },
   NULL
 }

@@ -54,28 +54,11 @@ impl Expression {
                                                                 eval_infix_expression(val_left, operator, val_right)
                                                               },
       Expression::IF {condition, consequence, alternative} => eval_if_expression(condition, consequence, alternative, env),
+      Expression::FUNCTION {parameters, body}              => Object::FUNCTION {parameters, body, env}, 
       _                                                    => panic!()
   }
   }
 }
-
-impl Program {  // this is eval_statements
-  pub fn eval(self, env: &mut Environment) -> Object {
-    let mut result = Object::NULL;
-    for s in self.statements {
-      result = s.eval(env);
-      match result {
-        Object::RETURN(r) => return *r,
-        Object::ERROR(_)  => return result,
-        _                 => continue
-      }
-    };
-    result
-  }
-}
-
-
-
 
 
 impl Statement {
@@ -103,6 +86,23 @@ impl Statement {
     } 
   }
 }
+
+
+impl Program {  // this is eval_statements
+  pub fn eval(self, env: &mut Environment) -> Object {
+    let mut result = Object::NULL;
+    for s in self.statements {
+      result = s.eval(env);
+      match result {
+        Object::RETURN(r) => return *r,
+        Object::ERROR(_)  => return result,
+        _                 => continue
+      }
+    };
+    result
+  }
+}
+
 
 impl BlockStatement {
   fn eval(self, env: &mut Environment) -> Object {

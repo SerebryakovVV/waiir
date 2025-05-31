@@ -1,6 +1,8 @@
 #![allow(dead_code, unused_imports, unused_variables)]
 
+use std::cell::RefCell;
 use std::io::{self, Write};
+use std::rc::Rc;
 use crate::evaluator::environment::Environment;
 use crate::lexer;
 use crate::parser::Parser;
@@ -36,7 +38,7 @@ pub const PROMPT: &str = ">> ";
 
 pub fn start() {
   let mut input_buffer = String::new();
-  let mut env = Environment::new();
+  let mut env = Rc::new(RefCell::new(Environment::new()));
   loop {
     print!("{}", PROMPT);
     io::stdout().flush().expect("Failed to flush stdout");
@@ -44,7 +46,7 @@ pub fn start() {
     if input_buffer.trim() == "q" {return;}
     let mut prsr = Parser::new(&input_buffer);
     let prgrm = prsr.parse_program();
-    let res = prgrm.eval(&mut env);   // TODO: again, i need to do something with this enum wrapping stuff 
+    let res = prgrm.eval(Rc::clone(&env));   
     println!("{}", res);
 
 

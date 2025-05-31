@@ -3,7 +3,7 @@
 mod object;
 pub mod environment;
 
-use std::sync::Once;
+use std::{cell::RefCell, rc::Rc, sync::Once};
 
 use environment::Environment;
 use object::Object;
@@ -29,25 +29,25 @@ use crate::{ast::{BlockStatement, Expression, Identifier, Node, Program, Stateme
 
 
 impl Expression {
-  fn eval(self, env: &mut Environment) -> Object {
+  fn eval(self, env: Rc<RefCell<Environment>>) -> Object {
     match self {
       Expression::INT(i)                                   => Object::INT(i), 
       Expression::BOOLEAN(b)                               => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
       Expression::IDENT(i)                                 => eval_identifier_expression(i, env),
       Expression::PREFIX {operator, right}                 => {
                                                                 // let val = eval(*right, env);
-                                                                let val = (*right).eval(env);
+                                                                let val = (*right).eval(Rc::clone(&env));
                                                                 if is_error(&val) {
                                                                   return val;
                                                                 }
                                                                 eval_prefix_expression(operator, val)
                                                               },
       Expression::INFIX {left, operator, right}            => {
-                                                                let val_left = (*left).eval(env);
+                                                                let val_left = (*left).eval(Rc::clone(&env));
                                                                 if is_error(&val_left) {
                                                                   return val_left;
                                                                 }
-                                                                let val_right = (*right).eval(env);
+                                                                let val_right = (*right).eval(Rc::clone(&env));
                                                                 if is_error(&val_right) {
                                                                   return val_right;
                                                                 }
@@ -62,11 +62,11 @@ impl Expression {
 
 
 impl Statement {
-  fn eval(self, env: &mut Environment) -> Object {
+  fn eval(self, env: Rc<RefCell<Environment>>) -> Object {
     match self {
-      Statement::EXPRESSION(expr)  => expr.eval(env),
+      Statement::EXPRESSION(expr)  => expr.eval(Rc::clone(&env)),
       Statement::RETURN {value}    => {
-                                        let val = value.eval(env);
+                                        let val = value.eval(Rc::clone(&env));
                                         if is_error(&val) {
                                           return val;
                                         } else {
@@ -74,11 +74,11 @@ impl Statement {
                                         }
                                       },
       Statement::LET {name, value} => {
-                                        let val = value.eval(env);
+                                        let val = value.eval(Rc::clone(&env));
                                         if is_error(&val) {
                                           return val
                                         } else {
-                                          env.set(name.value, val.clone()); // TODO: clone
+                                          env.borrow_mut().set(name.value, val.clone()); // TODO: clone
                                           val
                                         }
                                       },
@@ -89,10 +89,10 @@ impl Statement {
 
 
 impl Program {  // this is eval_statements
-  pub fn eval(self, env: &mut Environment) -> Object {
+  pub fn eval(self, env: Rc<RefCell<Environment>>) -> Object {
     let mut result = Object::NULL;
     for s in self.statements {
-      result = s.eval(env);
+      result = s.eval(Rc::clone(&env));
       match result {
         Object::RETURN(r) => return *r,
         Object::ERROR(_)  => return result,
@@ -105,10 +105,10 @@ impl Program {  // this is eval_statements
 
 
 impl BlockStatement {
-  fn eval(self, env: &mut Environment) -> Object {
+  fn eval(self, env: Rc<RefCell<Environment>>) -> Object {
     let mut result = Object::NULL;
     for s in self.statements {
-      result = s.eval(env);
+      result = s.eval(Rc::clone(&env));
       match result {
         Object::RETURN(_) | Object::ERROR(_) => return result,
         _                                    => continue
@@ -130,8 +130,8 @@ fn is_error(obj: &Object) -> bool {
 } 
 
 
-fn eval_identifier_expression(ident: Identifier, env: &mut Environment) -> Object {
-  match env.get(ident.value) {
+fn eval_identifier_expression(ident: Identifier, env: Rc<RefCell<Environment>>) -> Object {
+  match env.borrow_mut().get(ident.value) {
     Some(v) => (*v).clone(), // TODO: clone again...
     None    => Object::ERROR(String::from("Identifier not found"))
   }
@@ -139,13 +139,13 @@ fn eval_identifier_expression(ident: Identifier, env: &mut Environment) -> Objec
 
 
 
-fn eval_if_expression(condition: Box<Expression>, consequence: BlockStatement, alternative: Option<BlockStatement>, env: &mut Environment) -> Object {
-  let evaluated_condition = (*condition).eval(env);
+fn eval_if_expression(condition: Box<Expression>, consequence: BlockStatement, alternative: Option<BlockStatement>, env: Rc<RefCell<Environment>>) -> Object {
+  let evaluated_condition = (*condition).eval(Rc::clone(&env));
   if is_error(&evaluated_condition) {
     return evaluated_condition;
   }
   match (is_truthy(evaluated_condition), alternative) {  // look at this sexy pattern matching, oh my god! can your go do this? hmmm??
-    (true, _)          => consequence.eval(env),
+    (true, _)          => consequence.eval(Rc::clone(&env)),
     (false, Some(alt)) => alt.eval(env),
     (false, None)      => Object::NULL
   }

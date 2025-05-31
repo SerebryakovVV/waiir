@@ -1,6 +1,6 @@
 #![allow(dead_code, unused_imports, unused_variables, unreachable_patterns)]
 
-use std::fmt::Display;
+use std::{cell::RefCell, fmt::Display, rc::Rc};
 
 use crate::ast::{BlockStatement, Identifier};
 
@@ -16,7 +16,7 @@ pub enum Object {
   FUNCTION {
     parameters: Vec<Identifier>,
     body: BlockStatement,
-    env: &mut Environment
+    env: Rc<RefCell<Environment>>
   },
   NULL
 }

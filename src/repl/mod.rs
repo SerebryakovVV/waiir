@@ -5,7 +5,7 @@ use crate::evaluator::environment::Environment;
 use crate::lexer;
 use crate::parser::Parser;
 use crate::token::Token;
-use crate::evaluator::eval;
+
 
 
 pub const PROMPT: &str = ">> ";
@@ -44,7 +44,7 @@ pub fn start() {
     if input_buffer.trim() == "q" {return;}
     let mut prsr = Parser::new(&input_buffer);
     let prgrm = prsr.parse_program();
-    let res = eval(prgrm, &mut env);   // TODO: again, i need to do something with this enum wrapping stuff 
+    let res = prgrm.eval(&mut env);   // TODO: again, i need to do something with this enum wrapping stuff 
     println!("{}", res);
 
 

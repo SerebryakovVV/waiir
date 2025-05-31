@@ -26,33 +26,28 @@ use crate::{ast::{BlockStatement, Expression, Identifier, Node, Program, Stateme
 
 
 
-trait Evaluable {
-  fn eval(self, env: &mut Environment) -> Object;
-}
 
-pub fn eval<T: Evaluable>(node: T, env: &mut Environment) -> Object {   // TODO: i dont need neither trait nor this generic, unless i want to add something to it. Will leave for now
-  node.eval(env)
-}
 
-impl Evaluable for Expression {
+impl Expression {
   fn eval(self, env: &mut Environment) -> Object {
     match self {
       Expression::INT(i)                                   => Object::INT(i), 
       Expression::BOOLEAN(b)                               => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
       Expression::IDENT(i)                                 => eval_identifier_expression(i, env),
       Expression::PREFIX {operator, right}                 => {
-                                                                let val = eval(*right, env);
+                                                                // let val = eval(*right, env);
+                                                                let val = (*right).eval(env);
                                                                 if is_error(&val) {
                                                                   return val;
                                                                 }
                                                                 eval_prefix_expression(operator, val)
                                                               },
       Expression::INFIX {left, operator, right}            => {
-                                                                let val_left = eval(*left, env);
+                                                                let val_left = (*left).eval(env);
                                                                 if is_error(&val_left) {
                                                                   return val_left;
                                                                 }
-                                                                let val_right = eval(*right, env);
+                                                                let val_right = (*right).eval(env);
                                                                 if is_error(&val_right) {
                                                                   return val_right;
                                                                 }
@@ -64,11 +59,11 @@ impl Evaluable for Expression {
   }
 }
 
-impl Evaluable for Program {  // this is eval_statements
-  fn eval(self, env: &mut Environment) -> Object {
+impl Program {  // this is eval_statements
+  pub fn eval(self, env: &mut Environment) -> Object {
     let mut result = Object::NULL;
     for s in self.statements {
-      result = eval(s, env);
+      result = s.eval(env);
       match result {
         Object::RETURN(r) => return *r,
         Object::ERROR(_)  => return result,
@@ -83,12 +78,12 @@ impl Evaluable for Program {  // this is eval_statements
 
 
 
-impl Evaluable for Statement {
+impl Statement {
   fn eval(self, env: &mut Environment) -> Object {
     match self {
-      Statement::EXPRESSION(expr)  => eval(expr, env),
+      Statement::EXPRESSION(expr)  => expr.eval(env),
       Statement::RETURN {value}    => {
-                                        let val = eval(value, env);
+                                        let val = value.eval(env);
                                         if is_error(&val) {
                                           return val;
                                         } else {
@@ -96,7 +91,7 @@ impl Evaluable for Statement {
                                         }
                                       },
       Statement::LET {name, value} => {
-                                        let val = eval(value, env);
+                                        let val = value.eval(env);
                                         if is_error(&val) {
                                           return val
                                         } else {
@@ -109,11 +104,11 @@ impl Evaluable for Statement {
   }
 }
 
-impl Evaluable for BlockStatement {
+impl BlockStatement {
   fn eval(self, env: &mut Environment) -> Object {
     let mut result = Object::NULL;
     for s in self.statements {
-      result = eval(s, env);
+      result = s.eval(env);
       match result {
         Object::RETURN(_) | Object::ERROR(_) => return result,
         _                                    => continue
@@ -124,16 +119,6 @@ impl Evaluable for BlockStatement {
 }
 
 
-//  func evalBlockStatement(block *ast.BlockStatement) object.Object {
-//  var result object.Object
-//  for _, statement := range block.Statements {
-//  result = Eval(statement)
-//  if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
-//  return result
-//  }
-//  }
-//  return result
-//  }
 
 
 
@@ -155,13 +140,13 @@ fn eval_identifier_expression(ident: Identifier, env: &mut Environment) -> Objec
 
 
 fn eval_if_expression(condition: Box<Expression>, consequence: BlockStatement, alternative: Option<BlockStatement>, env: &mut Environment) -> Object {
-  let evaluated_condition = eval(*condition, env);
+  let evaluated_condition = (*condition).eval(env);
   if is_error(&evaluated_condition) {
     return evaluated_condition;
   }
   match (is_truthy(evaluated_condition), alternative) {  // look at this sexy pattern matching, oh my god! can your go do this? hmmm??
-    (true, _)          => eval(consequence, env),
-    (false, Some(alt)) => eval(alt, env),
+    (true, _)          => consequence.eval(env),
+    (false, Some(alt)) => alt.eval(env),
     (false, None)      => Object::NULL
   }
 }

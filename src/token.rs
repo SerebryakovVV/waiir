@@ -4,6 +4,7 @@ pub enum Token {
   EOF,
   IDENT(String),
   INT(i32),
+  STRING(String),
   EQ,
   NOTEQ,
   ASSIGN,

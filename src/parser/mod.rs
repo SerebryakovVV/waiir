@@ -104,16 +104,17 @@ impl Parser {
 
   fn parse_expression(&mut self, precedence: usize) -> Expression {
     let mut left_expression = match &self.current_token {
-      Token::IDENT(s) => Expression::IDENT(Identifier { value: s.clone() }),
-      Token::INT(i)   => Expression::INT(*i),
-      Token::BANG     => self.parse_prefix_expression(),
-      Token::MINUS    => self.parse_prefix_expression(),
-      Token::TRUE     => Expression::BOOLEAN(true),
-      Token::FALSE    => Expression::BOOLEAN(false),
-      Token::LPAREN   => self.parse_grouped_expression(),
-      Token::IF       => self.parse_if_expression(),
-      Token::FUNCTION => self.parse_function_literal(),
-      _               => Expression::DUMMY // TODO: errors
+      Token::IDENT(s)  => Expression::IDENT(Identifier { value: s.clone() }),
+      Token::INT(i)    => Expression::INT(*i),
+      Token::STRING(s) => Expression::STRING(s.clone()), // TODO: if i have the whole source code as an array, i can rewrite everything to slices and pointers instead of cloning(?)
+      Token::BANG      => self.parse_prefix_expression(), // ^ matching on reference right now, look into matching on owned value
+      Token::MINUS     => self.parse_prefix_expression(),
+      Token::TRUE      => Expression::BOOLEAN(true),
+      Token::FALSE     => Expression::BOOLEAN(false),
+      Token::LPAREN    => self.parse_grouped_expression(),
+      Token::IF        => self.parse_if_expression(),
+      Token::FUNCTION  => self.parse_function_literal(),
+      _                => Expression::DUMMY // TODO: errors
     };
     while !self.peek_token_is(Token::SEMICOLON) && precedence < self.peek_precedence() {
       match self.peek_token {

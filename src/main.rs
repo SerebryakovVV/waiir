@@ -94,6 +94,52 @@ mod tests {
       }
       assert_eq!(tokens, [Token::INT(1), Token::NOTEQ, Token::INT(2)]);
     }
+
+    #[test]
+    fn test_read_string() {
+      let mut l = lexer::Lexer::new("let a = \"my string\"");
+      let mut tokens: Vec<Token> = Vec::new();
+      loop {
+        let tkn = l.next_token();
+        if tkn == Token::EOF {
+          break;
+        } else {
+          tokens.push(tkn);
+        }
+      }
+      assert_eq!(tokens, [Token::LET, Token::IDENT(String::from("a")), Token::ASSIGN, Token::STRING(String::from("my string"))]);
+    }
+
+    #[test]
+    fn test_read_open_string() {
+      let mut l = lexer::Lexer::new("let a = \"my string; 5 + 5");
+      let mut tokens: Vec<Token> = Vec::new();
+      loop {
+        let tkn = l.next_token();
+        if tkn == Token::EOF {
+          break;
+        } else {
+          tokens.push(tkn);
+        }
+      }
+      assert_eq!(tokens, [Token::LET, Token::IDENT(String::from("a")), Token::ASSIGN, Token::ILLEGAL]);
+    }
+
+    #[test]
+    fn test_read_string_tokens_after() {
+      let mut l = lexer::Lexer::new("let a = \"my string\"; 5 + 5");
+      let mut tokens: Vec<Token> = Vec::new();
+      loop {
+        let tkn = l.next_token();
+        if tkn == Token::EOF {
+          break;
+        } else {
+          tokens.push(tkn);
+        }
+      }
+      assert_eq!(tokens, [Token::LET, Token::IDENT(String::from("a")), Token::ASSIGN, Token::STRING(String::from("my string")), Token::SEMICOLON, Token::INT(5), Token::PLUS, Token::INT(5)]);
+    }
+
   }
 
   mod parser_tests {

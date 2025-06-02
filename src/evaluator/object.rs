@@ -10,6 +10,7 @@ use super::environment::Environment;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
   INT(i32),
+  STRING(String),
   BOOLEAN(bool),
   RETURN(Box<Object>),
   ERROR(String),  // TODO: check lifetimes
@@ -31,8 +32,7 @@ impl Display for Object {
         Object::ERROR(e)     => write!(f, "{}", e),
         Object::RETURN(_)    => write!(f, "return"),
         Object::FUNCTION{..} => write!(f, "return"),
-        
-        // _                  => todo!()
+        Object::STRING(s)    => write!(f, "{}", s)
       }
   }
 }

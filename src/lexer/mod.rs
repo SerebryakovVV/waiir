@@ -75,6 +75,7 @@ impl Lexer {
             Token::BANG
           }
         },
+        '"' => self.read_string(),
         _   => {
           if t.is_ascii_alphabetic() {
             let literal = self.read_identifier();
@@ -103,6 +104,30 @@ impl Lexer {
     }
     self.read_char();
     token
+  }
+
+  fn read_string(&mut self) -> Token {
+    self.read_char();
+    let mut string_is_closed = false;
+    let position = self.position;
+    while let Some(c) = self.ch {
+      if c != '"' {
+        // position += 1;
+        self.read_char();
+      } else {
+        string_is_closed = true;
+        
+        break;
+      }
+    }
+    if string_is_closed {
+      let tkn = Token::STRING(self.input[position..self.position].iter().collect::<String>());
+      self.read_char();
+      return tkn;
+    } else {
+      // panic!()
+      Token::ILLEGAL  // TODO: handling on the lexer stage, adding it in other places too
+    }
   }
 
  fn read_identifier(&mut self) -> String {

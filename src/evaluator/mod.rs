@@ -31,7 +31,8 @@ use crate::{ast::{BlockStatement, Expression, Identifier, Node, Program, Stateme
 impl Expression {
   fn eval(self, env: Rc<RefCell<Environment>>) -> Object {
     match self {
-      Expression::INT(i)                                   => Object::INT(i), 
+      Expression::INT(i)                                   => Object::INT(i),
+      Expression::STRING(s)                                => Object::STRING(s),
       Expression::BOOLEAN(b)                               => Object::BOOLEAN(b), // TODO: look into making two objects for the boolean values, cant implement same way as in the book, borrow checker, type mismatch
       Expression::IDENT(i)                                 => eval_identifier_expression(i, env),
       Expression::PREFIX {operator, right}                 => {
@@ -71,8 +72,8 @@ impl Expression {
                                                                 }
                                                               },
 
-      _                                                    => panic!()
-  }
+      Expression::DUMMY                                    => todo!()
+    }
   }
 }
 
@@ -135,8 +136,7 @@ impl Statement {
                                           env.borrow_mut().set(name.value, val.clone()); // TODO: clone
                                           val
                                         }
-                                      },
-      _                            => panic!()
+                                      }
     } 
   }
 }
@@ -219,7 +219,15 @@ fn eval_infix_expression(left: Object, operator: Token, right: Object) -> Object
   match (left, right) {
     (Object::INT(l), Object::INT(r))         => eval_integer_infix_expression(l, operator, r),
     (Object::BOOLEAN(l), Object::BOOLEAN(r)) => eval_boolean_infix_expression(l, operator, r), 
+    (Object::STRING(sl), Object::STRING(sr)) => eval_string_infix_expression(sl, operator, sr),
     _                                        => Object::ERROR(String::from("Infix expression operands aren't ints or booleans"))
+  }
+}
+
+fn eval_string_infix_expression(left: String, operator: Token, right: String) -> Object {
+  match operator {
+    Token::PLUS => Object::STRING(String::from(left + &right)),
+    _           => Object::ERROR(String::from("Unsupported string infix operator"))
   }
 }
 

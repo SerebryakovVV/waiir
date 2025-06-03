@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_imports, unused_variables, unreachable_patterns)]
 
 use std::{cell::RefCell, fmt::{write, Display}, rc::Rc};
+use crate::evaluator::builtin::BuiltIn;
 
 use crate::ast::{BlockStatement, Identifier};
 
@@ -12,6 +13,7 @@ pub enum Object {
   INT(i32),
   STRING(String),
   BOOLEAN(bool),
+  BUILTIN(BuiltIn),
   RETURN(Box<Object>),
   ERROR(String),  // TODO: check lifetimes
   FUNCTION {
@@ -32,7 +34,8 @@ impl Display for Object {
         Object::ERROR(e)     => write!(f, "{}", e),
         Object::RETURN(_)    => write!(f, "return"),
         Object::FUNCTION{..} => write!(f, "return"),
-        Object::STRING(s)    => write!(f, "{}", s)
+        Object::STRING(s)    => write!(f, "{}", s),
+        Object::BUILTIN(_)   => write!(f, "builtin"),   // TODO: i need something like a todo!, but without panicking 
       }
   }
 }

@@ -37,6 +37,7 @@ pub enum Expression {
   IDENT(Identifier),
   INT(i32),
   STRING(String),
+  ARRAY(Vec<Expression>),
   PREFIX {
     operator:Token, 
     right:Box<Expression>

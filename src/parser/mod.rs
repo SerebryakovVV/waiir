@@ -104,6 +104,7 @@ impl Parser {
 
   fn parse_expression(&mut self, precedence: usize) -> Expression {
     let mut left_expression = match &self.current_token {
+      // THIS IS PREFIXES!!!
       Token::IDENT(s)  => Expression::IDENT(Identifier { value: s.clone() }),
       Token::INT(i)    => Expression::INT(*i),
       Token::STRING(s) => Expression::STRING(s.clone()), // TODO: if i have the whole source code as an array, i can rewrite everything to slices and pointers instead of cloning(?)
@@ -112,9 +113,11 @@ impl Parser {
       Token::TRUE      => Expression::BOOLEAN(true),
       Token::FALSE     => Expression::BOOLEAN(false),
       Token::LPAREN    => self.parse_grouped_expression(),
+      Token::LBRACKET  => self.parse_array_literal(),
       Token::IF        => self.parse_if_expression(),
       Token::FUNCTION  => self.parse_function_literal(),
-      _                => Expression::DUMMY // TODO: errors
+      // _                => Expression::DUMMY // TODO: errors
+      _ => panic!()
     };
     while !self.peek_token_is(Token::SEMICOLON) && precedence < self.peek_precedence() {
       match self.peek_token {
@@ -138,6 +141,29 @@ impl Parser {
     }
     // TODO:  noPrefixParseFnError
     left_expression
+  }
+
+  fn parse_array_literal(&mut self) -> Expression {
+    Expression::ARRAY(self.parse_expression_list(Token::RBRACKET))
+  }
+
+  fn parse_expression_list(&mut self, end: Token) -> Vec<Expression> {
+    let mut list = Vec::new();
+    if self.peek_token_is(end.clone()) {
+      self.next_token();
+      return list;
+    };
+    self.next_token();
+    list.push(self.parse_expression(LOWEST));
+    while self.peek_token_is(Token::COMMA) {
+      self.next_token();
+      self.next_token();
+      list.push(self.parse_expression(LOWEST));
+    };
+    if !self.expect_peek(end) {
+      todo!();
+    }
+    list
   }
 
   fn parse_prefix_expression(&mut self) -> Expression {
@@ -164,29 +190,34 @@ impl Parser {
     self.next_token();
     let expr = self.parse_expression(LOWEST);
     if !self.expect_peek(Token::RPAREN) {
-      return Expression::DUMMY;
+      // return Expression::DUMMY;
+      panic!();
     }
     expr
   }
 
   fn parse_if_expression(&mut self) -> Expression {
     if !self.expect_peek(Token::LPAREN) {
-      return Expression::DUMMY;
+      // return Expression::DUMMY;
+      panic!();
     }
     self.next_token();
     let condition = self.parse_expression(LOWEST);
     if !self.expect_peek(Token::RPAREN) {
-      return Expression::DUMMY;
+      // return Expression::DUMMY;
+      panic!();
     }
     if !self.expect_peek(Token::LBRACE) {
-      return Expression::DUMMY;
+      // return Expression::DUMMY;
+      panic!();
     }
     let consequence = self.parse_block_statement();
     let mut alternative = None;
     if self.peek_token_is(Token::ELSE) {
       self.next_token();
       if !self.expect_peek(Token::LBRACE) {
-        return Expression::DUMMY;
+        // return Expression::DUMMY;
+        panic!();
       }
       alternative = Some(self.parse_block_statement());
     }
@@ -212,11 +243,13 @@ impl Parser {
 
   fn parse_function_literal(&mut self) -> Expression {
     if !self.expect_peek(Token::LPAREN) {
-      return Expression::DUMMY;
+      // return Expression::DUMMY;
+      panic!();
     }
     let parameters = self.parse_function_parameters();
     if !self.expect_peek(Token::LBRACE) {
-      return Expression::DUMMY;
+      // return Expression::DUMMY;
+      panic!();
     }
     let body = self.parse_block_statement();
     Expression::FUNCTION {parameters, body}
@@ -254,10 +287,13 @@ impl Parser {
   }
 
   fn parse_call_expression(&mut self, function: Expression) -> Expression {
-    let arguments = self.parse_call_arguments();
+    // let arguments = self.parse_call_arguments();
+    let arguments = self.parse_expression_list(Token::RPAREN);
     Expression::CALL {function: Box::new(function), arguments}
   }
 
+
+  // we implemented a broader method for parsing a list of expressions, this one is not needed anymore
   fn parse_call_arguments(&mut self) -> Vec<Expression> {
     let mut arguments = Vec::new();
     if self.peek_token_is(Token::RPAREN) {
@@ -271,6 +307,11 @@ impl Parser {
       self.next_token();
       arguments.push(self.parse_expression(LOWEST));
     };
+
+    // println!("{:#?}", self.current_token);
+    // println!("{:#?}", self.peek_token);
+    
+
     if !self.expect_peek(Token::RPAREN) {
       // TODO: also add an error, or rewrite everything with result/option or something
       panic!();

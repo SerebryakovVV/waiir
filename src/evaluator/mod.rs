@@ -2,6 +2,9 @@
 
 mod object;
 pub mod environment;
+mod builtin;
+
+use builtin::BuiltIn;
 
 use std::{cell::RefCell, rc::Rc, sync::Once};
 
@@ -72,20 +75,37 @@ impl Expression {
                                                                 }
                                                               },
 
-      Expression::DUMMY                                    => todo!()
+      Expression::DUMMY                                    => {println!("dummy"); Object::NULL},
+      Expression::ARRAY(v)                                 => {println!("{:#?}", v); Object::NULL},
     }
   }
 }
 
 
 fn apply_function(func: Object, args: Vec<Object>) -> Object {
-  if let Object::FUNCTION { parameters, body, env } = func {
-    let extended_env = extend_function_env(parameters, env, args);
-    let evaluated = body.eval(extended_env);
-    return unwrap_return_value(evaluated);
-  } else {
-    return Object::ERROR(String::from("Not a function"));
+
+
+  match func {
+    Object::FUNCTION {parameters, body, env} => {
+      let extended_env = extend_function_env(parameters, env, args);
+      let evaluated = body.eval(extended_env);
+      return unwrap_return_value(evaluated);
+    },
+    Object::BUILTIN(b) => {
+      b.apply(args)
+    },
+    _ => return Object::ERROR(String::from("Not a function"))
   }
+
+
+
+  // if let Object::FUNCTION { parameters, body, env } = func {
+  //   let extended_env = extend_function_env(parameters, env, args);
+  //   let evaluated = body.eval(extended_env);
+  //   return unwrap_return_value(evaluated);
+  // } else {
+  //   return Object::ERROR(String::from("Not a function"));
+  // }
 }
 
 fn extend_function_env(params: Vec<Identifier>, env: Rc<RefCell<Environment>>, args: Vec<Object>) -> Rc<RefCell<Environment>> {
@@ -185,9 +205,15 @@ fn is_error(obj: &Object) -> bool {
 
 
 fn eval_identifier_expression(ident: Identifier, env: Rc<RefCell<Environment>>) -> Object {
-  match env.borrow_mut().get(ident.value) {
+  match env.borrow_mut().get(ident.value.clone()) {
     Some(v) => v,
-    None    => Object::ERROR(String::from("Identifier not found"))
+    None    => {
+      // not found in env, try builtins
+      match BuiltIn::look_up_by_ident(&ident.value) {
+        Some(b) => Object::BUILTIN(b),
+        None    => Object::ERROR(String::from("Identifier not found"))
+      }
+    }
   }
 }
 

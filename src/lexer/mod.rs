@@ -51,6 +51,8 @@ impl Lexer {
         '>' => Token::GT,
         '{' => Token::LBRACE,
         '}' => Token::RBRACE,
+        '[' => Token::LBRACKET,
+        ']' => Token::RBRACKET,
         '=' => {
           if let Some(c) = self.peek_char() {
             if c == '=' {
@@ -122,7 +124,7 @@ impl Lexer {
     }
     if string_is_closed {
       let tkn = Token::STRING(self.input[position..self.position].iter().collect::<String>());
-      self.read_char();
+      // self.read_char();
       return tkn;
     } else {
       // panic!()

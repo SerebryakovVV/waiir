@@ -140,6 +140,21 @@ mod tests {
       assert_eq!(tokens, [Token::LET, Token::IDENT(String::from("a")), Token::ASSIGN, Token::STRING(String::from("my string")), Token::SEMICOLON, Token::INT(5), Token::PLUS, Token::INT(5)]);
     }
 
+    #[test]
+    fn test_read_array() {
+      let mut l = lexer::Lexer::new("let a = [1, 3]");
+      let mut tokens: Vec<Token> = Vec::new();
+      loop {
+        let tkn = l.next_token();
+        if tkn == Token::EOF {
+          break;
+        } else {
+          tokens.push(tkn);
+        }
+      }
+      assert_eq!(tokens, [Token::LET, Token::IDENT(String::from("a")), Token::ASSIGN, Token::LBRACKET, Token::INT(1), Token::COMMA, Token::INT(3), Token::RBRACKET]);
+    }
+
   }
 
   mod parser_tests {

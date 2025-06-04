@@ -75,10 +75,41 @@ impl Expression {
                                                                 }
                                                               },
 
-      Expression::DUMMY                                    => {println!("dummy"); Object::NULL},
-      Expression::ARRAY(v)                                 => {println!("{:#?}", v); Object::NULL},
+      Expression::DUMMY                                    => {println!("dummy"); Object::NULL}, //  TODO: get rid of this one
+      Expression::ARRAY(v)                                 => {
+                                                                // println!("{:#?}", v); Object::NULL
+                                                                // let elements = eval_expressions(v, env);
+                                                                match eval_expressions(v, Rc::clone(&env)) {
+                                                                  Ok(els)  => Object::ARRAY(els),
+                                                                  Err(err) => err
+                                                                }
+                                                              },  // add eval for these two
+      Expression::INDEX {left, index}                      => {
+                                                                // println!("index expr eval function"); Object::NULL
+                                                                let arr_left = left.eval(Rc::clone(&env));
+                                                                if is_error(&arr_left) {return arr_left};
+                                                                let arr_index = index.eval(Rc::clone(&env));
+                                                                if is_error(&arr_index) {return arr_index};
+                                                                eval_index_expression(arr_left, arr_index)
+                                                                // Object::INT(1)
+                                                              }        
     }
   }
+}
+
+fn eval_index_expression(left: Object, index: Object) -> Object {
+  match (left, index) {
+    (Object::ARRAY(els), Object::INT(i)) => eval_array_index_expression(els, i),
+    _                                    => Object::ERROR(String::from("Wrong array indexing expression"))
+  }
+}
+
+
+fn eval_array_index_expression(els: Vec<Object>, index: i32) -> Object {
+  if index < 0 || index > els.len() as i32 - 1 {
+    return Object::ERROR(String::from("index out of bounds"));
+  };
+  els[index as usize].clone()  // TODO: :(
 }
 
 

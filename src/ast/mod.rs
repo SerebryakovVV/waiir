@@ -38,6 +38,10 @@ pub enum Expression {
   INT(i32),
   STRING(String),
   ARRAY(Vec<Expression>),
+  INDEX {
+    left: Box<Expression>,
+    index: Box<Expression>
+  },
   PREFIX {
     operator:Token, 
     right:Box<Expression>

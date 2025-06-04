@@ -15,6 +15,7 @@ const SUM: usize = 4;
 const PRODUCT: usize = 5;
 const PREFIX: usize = 6;
 const CALL: usize = 7;
+const INDEX: usize = 7;
 
 
 pub struct Parser {
@@ -136,11 +137,24 @@ impl Parser {
                               self.next_token();
                               left_expression = self.parse_call_expression(left_expression);
                             },
+        Token::LBRACKET  => {
+                              self.next_token();
+                              left_expression = self.parse_index_expression(left_expression);
+                            },
         _                => return left_expression
       };
     }
     // TODO:  noPrefixParseFnError
     left_expression
+  }
+
+  fn parse_index_expression(&mut self, left: Expression) -> Expression {
+    self.next_token();
+    let index = self.parse_expression(LOWEST);
+    if !self.expect_peek(Token::RBRACKET) {
+      panic!();
+    }
+    Expression::INDEX { left: Box::new(left), index: Box::new(index) }
   }
 
   fn parse_array_literal(&mut self) -> Expression {
@@ -350,12 +364,13 @@ impl Parser {
 
   fn get_precedence(&self, tkn: Token) -> usize {
     match tkn {
-      Token::EQ     | Token::NOTEQ    => EQUALS,
-      Token::LT     | Token::GT       => LESSGREATER,
-      Token::PLUS   | Token::MINUS    => SUM,
-      Token::SLASH  | Token::ASTERISK => PRODUCT,
-      Token::LPAREN                   => CALL,
-      _                               => LOWEST  // TODO: add the errors
+      Token::EQ       | Token::NOTEQ    => EQUALS,
+      Token::LT       | Token::GT       => LESSGREATER,
+      Token::PLUS     | Token::MINUS    => SUM,
+      Token::SLASH    | Token::ASTERISK => PRODUCT,
+      Token::LPAREN                     => CALL,
+      Token::LBRACKET                   => INDEX,
+      _                                 => LOWEST  // TODO: add the errors
     }
   }
 

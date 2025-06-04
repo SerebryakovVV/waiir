@@ -13,6 +13,7 @@ pub enum Object {
   INT(i32),
   STRING(String),
   BOOLEAN(bool),
+  ARRAY(Vec<Object>),
   BUILTIN(BuiltIn),
   RETURN(Box<Object>),
   ERROR(String),  // TODO: check lifetimes
@@ -36,6 +37,12 @@ impl Display for Object {
         Object::FUNCTION{..} => write!(f, "return"),
         Object::STRING(s)    => write!(f, "{}", s),
         Object::BUILTIN(_)   => write!(f, "builtin"),   // TODO: i need something like a todo!, but without panicking 
+        Object::ARRAY(els)   => {
+                                  for el in els {
+                                    write!(f, "{}\n", el)?
+                                  };
+                                  Ok(())
+                                }
       }
   }
 }

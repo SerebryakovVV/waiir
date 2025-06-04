@@ -193,7 +193,8 @@ mod tests {
 
     #[test]
     fn parse_ident_int_bare() {
-      let mut prsr = parser::Parser::new("let b = fn (a, b) {return a + b}");
+      // let mut prsr = parser::Parser::new("let b = fn (a, b) {return a + b}");
+      let mut prsr = parser::Parser::new("let b = [1, 2, 3]; b[1];");
       // let mut prsr = parser::Parser::new("add(a, b, c);");
       // let mut prsr = parser::Parser::new("add(a + b + c * d / f + g, 456 + sum);");
       // let mut prsr = parser::Parser::new("fn(x, y, z) {};");

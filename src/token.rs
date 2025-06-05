@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Eq, Hash, Debug, PartialEq, Clone, Ord, PartialOrd)]
 pub enum Token {
   ILLEGAL,
   EOF,
@@ -17,6 +17,7 @@ pub enum Token {
   GT,
   COMMA,
   SEMICOLON,
+  COLON,
   LPAREN,
   RPAREN,
   LBRACE,

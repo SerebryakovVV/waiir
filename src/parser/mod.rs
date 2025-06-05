@@ -2,6 +2,7 @@
 #![allow(dead_code, unused_imports, unused_variables)]
 
 use core::panic;
+use std::collections::BTreeMap;
 use std::env::consts;
 use crate::lexer::Lexer;
 use crate::token::Token;
@@ -115,6 +116,7 @@ impl Parser {
       Token::FALSE     => Expression::BOOLEAN(false),
       Token::LPAREN    => self.parse_grouped_expression(),
       Token::LBRACKET  => self.parse_array_literal(),
+      Token::LBRACE    => self.parse_hash_literal(),
       Token::IF        => self.parse_if_expression(),
       Token::FUNCTION  => self.parse_function_literal(),
       // _                => Expression::DUMMY // TODO: errors
@@ -146,6 +148,31 @@ impl Parser {
     }
     // TODO:  noPrefixParseFnError
     left_expression
+  }
+
+
+  fn parse_hash_literal(&mut self, ) -> Expression {
+    let mut pairs = BTreeMap::new();
+
+    while !self.peek_token_is(Token::RBRACE) {
+      self.next_token();
+      let key = self.parse_expression(LOWEST);
+      if !self.expect_peek(Token::COLON) {
+        return Expression::DUMMY; // TODO: error handling
+      }
+      self.next_token();
+      let value = self.parse_expression(LOWEST);
+      pairs.insert(key, value);
+      if !self.peek_token_is(Token::RBRACE) && !self.expect_peek(Token::COMMA) {
+        return Expression::DUMMY;
+      }
+
+    }
+    if !self.expect_peek(Token::RBRACE) {
+      return Expression::DUMMY;
+    }
+
+    Expression::HASH(pairs)
   }
 
   fn parse_index_expression(&mut self, left: Expression) -> Expression {

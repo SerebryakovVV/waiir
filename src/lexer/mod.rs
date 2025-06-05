@@ -49,6 +49,7 @@ impl Lexer {
         '/' => Token::SLASH,
         '<' => Token::LT,
         '>' => Token::GT,
+        ':' => Token::COLON,
         '{' => Token::LBRACE,
         '}' => Token::RBRACE,
         '[' => Token::LBRACKET,

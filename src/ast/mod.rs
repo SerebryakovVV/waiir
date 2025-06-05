@@ -1,4 +1,10 @@
+// TODO: clean up all these implemenations
+
+
 #![allow(dead_code, unused_imports, unused_variables)]
+
+use std::collections::BTreeMap;
+
 
 use crate::token::Token;
 
@@ -14,7 +20,7 @@ pub enum Node {
   BlockStatement(BlockStatement)
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Ord, PartialOrd)]
 pub enum Statement {
   LET {
     name: Identifier,
@@ -32,7 +38,7 @@ pub enum PrefixOperator {
   NEG
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Ord, PartialOrd)]
 pub enum Expression {
   IDENT(Identifier),
   INT(i32),
@@ -42,6 +48,7 @@ pub enum Expression {
     left: Box<Expression>,
     index: Box<Expression>
   },
+  HASH(BTreeMap<Expression, Expression>),
   PREFIX {
     operator:Token, 
     right:Box<Expression>
@@ -68,12 +75,12 @@ pub enum Expression {
   DUMMY
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Ord, PartialOrd)]
 pub struct BlockStatement {
   pub statements: Vec<Statement>
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Ord, PartialOrd)]
 pub struct Identifier {pub value:String}
 
 

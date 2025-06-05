@@ -6,12 +6,13 @@ mod builtin;
 
 use builtin::BuiltIn;
 
-use std::{cell::RefCell, rc::Rc, sync::Once};
+use std::{cell::RefCell, collections::BTreeMap, hash::Hash, rc::Rc, sync::Once};
 
 use environment::{new_enclosed_environment, Environment};
 use object::Object;
 
-use crate::{ast::{BlockStatement, Expression, Identifier, Node, Program, Statement}, token::Token};
+
+use crate::{ast::{BlockStatement, Expression, Identifier, Node, Program, Statement}, evaluator::object::{HashKey, Hashable}, token::Token};
 
 
 // static TRUE: &'static Object = &Object::BOOLEAN(true);
@@ -92,18 +93,94 @@ impl Expression {
                                                                 if is_error(&arr_index) {return arr_index};
                                                                 eval_index_expression(arr_left, arr_index)
                                                                 // Object::INT(1)
-                                                              }        
+                                                              }        , 
+      Expression::HASH(h) => eval_hash_literal(h, Rc::clone(&env)),
+                                                              _=> Object::NULL
     }
   }
 }
 
+
+
+// this is the most retarded code in this project, i have no idea what is happening here, its 04:47 right now
+fn eval_hash_literal(hsh: BTreeMap<Expression, Expression>, env: Rc<RefCell<Environment>>) -> Object {
+  let mut pairs = BTreeMap::<HashKey, Object>::new();
+  for (k, v) in hsh {
+    // let fin_key = k.eval(Rc::clone(&env));
+    // if is_error(&fin_key) {
+    //   return Object::ERROR("some error".to_string());
+    // };
+    // let mut hashed_key = 
+    // match &v {
+    //   Expression::BOOLEAN(b) => b.my_hash(), 
+    //   Expression::INT(i)  => i.my_hash(),
+    //    Expression::STRING(s)  => s.my_hash(),// hash it here,
+    //   _ => return Object::ERROR("some other error hash".to_string())
+    // };
+    // let fin_val = v.eval(Rc::clone(&env));
+    // if is_error(&fin_val) {
+    //   return Object::ERROR("some another error".to_string());
+    // }
+    // pairs.insert(hashed_key, fin_val);
+
+    let fin_key = k.eval(Rc::clone(&env));
+    if is_error(&fin_key) {
+      return Object::ERROR("some error".to_string());
+    };
+    let mut hashed_key = 
+    match fin_key {
+      Object::BOOLEAN(b) => b.my_hash(), 
+      Object::INT(i)  => i.my_hash(),
+       Object::STRING(s)  => s.my_hash(),// hash it here,
+      _ => return Object::ERROR("some other error hash".to_string())
+    };
+    let fin_val = v.eval(Rc::clone(&env));
+    if is_error(&fin_val) {
+      return Object::ERROR("some another error".to_string());
+    }
+    pairs.insert(hashed_key, fin_val);
+
+    
+  }
+  Object::HASH(pairs)
+}
+
 fn eval_index_expression(left: Object, index: Object) -> Object {
-  match (left, index) {
-    (Object::ARRAY(els), Object::INT(i)) => eval_array_index_expression(els, i),
+  match (left, &index) {
+    (Object::ARRAY(els), Object::INT(i)) => eval_array_index_expression(els, *i),
+    (Object::HASH(hsh), _)  => eval_hash_index_expression(hsh, index),
     _                                    => Object::ERROR(String::from("Wrong array indexing expression"))
   }
 }
 
+
+fn eval_hash_index_expression(hsh: BTreeMap<HashKey, Object>, index: Object) -> Object {
+  let key = match index {
+    Object::INT(i) => i.my_hash(),
+    Object::BOOLEAN(b) => b.my_hash(),
+    Object::STRING(s) => s.my_hash(),
+    _ => return Object::ERROR("non hashable".to_string())
+  };
+
+  // if let Object::HASH(h) = hsh {
+  //   match h.get(&key) {
+  //     Some(v) => v.clone(),
+  //     None => Object::NULL
+  //   } 
+  // } else {
+  //   Object::ERROR("idk, some error".to_string())
+  // }
+
+
+    println!("{:#?}", key);
+
+    match hsh.get(&key) {
+      Some(v) => v.clone(),
+      None => {println!("error here");Object::NULL}
+    } 
+
+  
+}
 
 fn eval_array_index_expression(els: Vec<Object>, index: i32) -> Object {
   if index < 0 || index > els.len() as i32 - 1 {
